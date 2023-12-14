@@ -26,7 +26,7 @@ source=("https://github.com/ggerganov/whisper.cpp/archive/refs/tags/v${pkgver}.t
         "0002-fix-openblas-lookup.patch"
         "0003-server-fix-missing-lib.patch"
         "0004-download-models-pwd.patch")
-sha256sums=('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+sha256sums=('be9c4d5d4b5f28f02e36f28e602b7d2dcfd734dd1c834ddae91ae8db601e951f'
             '30765001468dbc40893a2a63e675b2b40f290e27c3314e82dd7f72404d2d1ccf'
             '0314546c2ab5810ba84d4b2e14a84f992a282fc57698bd7a678756f8f6d13171'
             '0d29b3df33df73683c2f3c3c02e3e522d9a1dbd3eaf8ac5fd6c920d81364fdd2'
