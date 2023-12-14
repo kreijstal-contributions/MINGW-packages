@@ -3,7 +3,7 @@
 _realname=whisper.cpp
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-pkgver=1.5.1
+pkgver=1.5.2
 pkgrel=1
 pkgdesc="Port of OpenAI's Whisper model in C/C++ (mingw-w64)"
 arch=('any')
