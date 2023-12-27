@@ -22,6 +22,7 @@ depends=(
     "${MINGW_PACKAGE_PREFIX}-python-configobj"
     "${MINGW_PACKAGE_PREFIX}-python-cli_helpers"
     "${MINGW_PACKAGE_PREFIX}-python-pyperclip"
+    "${MINGW_PACKAGE_PREFIX}-python-pyaes"
 )
 makedepends=(
   "${MINGW_PACKAGE_PREFIX}-python-build"
