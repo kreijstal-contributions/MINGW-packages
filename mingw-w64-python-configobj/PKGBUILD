@@ -1,0 +1,30 @@
+# Maintainer:
+# Contributor:
+
+_realname=python-configobj
+pkgbase=mingw-w64-python-${_realname}
+pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
+pkgver=5.0.8
+pkgrel=1
+pkgdesc='Simple config file reader and writer (mingw-w64)'
+arch=(any)
+url='https://github.com/DiffSK/configobj'
+license=(BSD)
+depends=("${MINGW_PACKAGE_PREFIX}-python-six")
+makedepends=(git "${MINGW_PACKAGE_PREFIX}-python-setuptools")
+source=("git+$url#commit=a58c2f4de0e9e854daa67fec630506e5a461eea9") # tag: v5.0.8
+b2sums=('SKIP')
+
+prepare() {
+  cd configobj
+  # Avoid the need for a local configobj install just for VERSION
+  local _version=$(grep -oP "__version__ = '\K[^']+" src/configobj/_version.py)
+  sed -i "/from validate/d;s/VERSION/\"$_version\"/" setup_validate.py
+}
+
+package() {
+  cd configobj
+  ${MINGW_PREFIX}/bin/python setup.py install --root="$pkgdir" --optimize=1
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  ${MINGW_PREFIX}/bin/python setup_validate.py install --root="$pkgdir" --optimize=1
+}
