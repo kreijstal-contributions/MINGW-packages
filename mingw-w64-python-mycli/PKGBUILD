@@ -29,8 +29,8 @@ makedepends=(
   "${MINGW_PACKAGE_PREFIX}-python-wheel"
   "${MINGW_PACKAGE_PREFIX}-python-setuptools"
 )
-makedepends=("${MINGW_PACKAGE_PREFIX}-python-setuptools")
 optdepends=("${MINGW_PACKAGE_PREFIX}-python-paramiko: SSH support")
+checkdepends=("${MINGW_PACKAGE_PREFIX}-python-pytest")
 options=('!emptydirs' '!strip')
 source=("https://pypi.org/packages/source/${_realname::1}/${_realname}/${_realname}-${pkgver}.tar.gz")
 sha256sums=('a71db5bd9c1a7d0006f4f2ff01548ce75637d3f50ca3a7e77b950b5b46aff7cd')
@@ -38,6 +38,11 @@ sha256sums=('a71db5bd9c1a7d0006f4f2ff01548ce75637d3f50ca3a7e77b950b5b46aff7cd')
 build() {
     cd "$srcdir/${_realname}-$pkgver"
     ${MINGW_PREFIX}/bin/python -m build --wheel --no-isolation
+}
+
+check() {
+  cd "$srcdir/${_realname}-$pkgver"
+  pytest -v -k "not test_list_dsn and not test_list_ssh_config and not test_ssh_config and not test_tee_command and not test_once_command"
 }
 
 package() {
