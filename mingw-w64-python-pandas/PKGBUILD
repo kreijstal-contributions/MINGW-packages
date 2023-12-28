@@ -15,6 +15,7 @@ url="https://pandas.pydata.org/"
 license=('spdx:BSD-3-Clause')
 depends=("${MINGW_PACKAGE_PREFIX}-python-numpy"
          "${MINGW_PACKAGE_PREFIX}-python-pytz"
+         "${MINGW_PACKAGE_PREFIX}-python-tzdata"
          "${MINGW_PACKAGE_PREFIX}-python-dateutil")
 optdepends=("${MINGW_PACKAGE_PREFIX}-python-scipy: needed for miscellaneous statistical functions"
             "${MINGW_PACKAGE_PREFIX}-python-matplotlib: needed for plotting"
