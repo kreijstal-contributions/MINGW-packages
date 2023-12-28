@@ -23,7 +23,7 @@ build() {
   msg "Python build for ${MSYSTEM}"
   cd "${srcdir}/${_realname}-${pkgver}"
 
-  ${MINGW_PREFIX}/bin/python -m build
+  ${MINGW_PREFIX}/bin/python -m build --wheel --skip-dependency-check --no-isolation
 }
 
 check() {
