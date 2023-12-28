@@ -6,8 +6,8 @@ pkgname=("${MINGW_PACKAGE_PREFIX}-python-${_realname}")
 provides=("${MINGW_PACKAGE_PREFIX}-python3-${_realname}")
 conflicts=("${MINGW_PACKAGE_PREFIX}-python3-${_realname}")
 replaces=("${MINGW_PACKAGE_PREFIX}-python3-${_realname}")
-pkgver=1.5.3
-pkgrel=2
+pkgver=2.0.0
+pkgrel=1
 pkgdesc="Cross-section and time series data analysis toolkit (mingw-w64)"
 arch=('any')
 mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
@@ -22,9 +22,10 @@ optdepends=("${MINGW_PACKAGE_PREFIX}-python-scipy: needed for miscellaneous stat
             "${MINGW_PACKAGE_PREFIX}-python-openpyxl: needed for reading/writing Excel file")
 makedepends=("${MINGW_PACKAGE_PREFIX}-python-setuptools"
              "${MINGW_PACKAGE_PREFIX}-cc"
+             "${MINGW_PACKAGE_PREFIX}-python-versioneer"
              "${MINGW_PACKAGE_PREFIX}-cython0")
 source=(${_realname}-${pkgver}.tar.gz::"https://github.com/pandas-dev/${_realname}/releases/download/v${pkgver}/${_realname}-${pkgver}.tar.gz")
-sha256sums=('74a3fd7e5a7ec052f183273dc7b0acd3a863edf7520f5d3a1765c04ffdb3b0b1')
+sha256sums=('cda9789e61b44463c1c4fe17ef755de77bcd13b09ba31c940d20f193d63a5dc8')
 
 prepare() {
   cp -a ${_realname}-${pkgver} ${_realname}-py-${pkgver}
