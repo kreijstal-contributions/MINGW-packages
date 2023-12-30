@@ -3,8 +3,7 @@
 _realname=xournalpp
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-_commit=$(git ls-remote --tags https://github.com/xournalpp/xournalpp.git | awk '{print $2}' | sort -V | tail -n 1 | sed 's/refs\/tags\///;s/-/./g')
-pkgver=1.1.1.r857.g09ae33339
+pkgver=v1.2.2
 pkgrel=1
 pkgdesc="Xournal++ - a modern handwritten note-taking software (mingw-w64)"
 arch=('any')
@@ -25,7 +24,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              'patch'
              'make'
              'git')
-source=("${_realname}"::"git+https://github.com/xournalpp/xournalpp.git#tag=${_commit}")
+source=("${_realname}"::"git+https://github.com/xournalpp/xournalpp.git#tag=${pkgver}")
 sha256sums=('SKIP')
 
 pkgver() {
