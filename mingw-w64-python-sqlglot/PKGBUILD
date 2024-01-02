@@ -18,6 +18,7 @@ sha256sums=('2fd39e18c84e7eb22f007f9246d02048155e1b0e920d0f10daee485c816b9a0d')
 
 build() {
     cd "$srcdir/sqlglot-${pkgver}"
+    export SETUPTOOLS_SCM_PRETEND_VERSION=${pkgver}
     ${MINGW_PREFIX}/bin/python -m build --wheel --no-isolation --skip-dependency-check 
 }
 
