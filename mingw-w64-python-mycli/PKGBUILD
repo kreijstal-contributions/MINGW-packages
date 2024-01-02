@@ -7,6 +7,7 @@ pkgver=1.27.0
 pkgrel=1
 pkgdesc='A Terminal Client for MySQL with AutoCompletion and Syntax Highlighting (mingw-w64)'
 arch=('any')
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
 url='https://github.com/dbcli/mycli'
 license=('BSD')
 depends=(
