@@ -188,7 +188,7 @@ package() {
   (
     cd $_realname
     #waf i18n --destdir="${pkgdir}"
-    waf install --destdir="${pkgdir}"
+    waf install --destdir="$(cygpath -w $pkgdir)"
     install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"
   )
 
@@ -196,9 +196,9 @@ package() {
   cd "${srcdir}/build-${MSYSTEM}"
   install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
   unzip $_realname-midi-$pkgver.zip -d "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
- # install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/licenses/$pkgname/"
- # ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
- # ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
- # ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Progressions/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.progressions"
+  install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/licenses/$pkgname/"
+  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
+  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
+  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Progressions/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.progressions"
 }
 # vim:set ts=2 sw=2 et:
