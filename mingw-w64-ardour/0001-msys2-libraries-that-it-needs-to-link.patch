@@ -1,0 +1,25 @@
+From e7121271fa19b997f6d843ff303b6764ffce7b42 Mon Sep 17 00:00:00 2001
+From: Kreijstal <rainb@tfwno.gf>
+Date: Mon, 26 Feb 2024 18:43:46 +0100
+Subject: [PATCH 1/2] msys2 libraries that it needs to link
+
+---
+ wscript | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/wscript b/wscript
+index 37f9b5b34f..24103232aa 100644
+--- a/wscript
++++ b/wscript
+@@ -1281,6 +1281,8 @@ int main () { int x = SFC_RF64_AUTO_DOWNGRADE; return 0; }
+                       lib='regex', uselib_store="REGEX", define_name='HAVE_REGEX_H')
+         # TODO put this only where it is needed
+         conf.env.append_value('LIB', 'regex')
++        conf.env.append_value('LIB', 'bcrypt')
++        conf.env.append_value('LIB', 'fftw3f_threads')
+         # TODO this should only be necessary for a debug build
+         conf.env.append_value('LIB', 'dbghelp')
+ 
+-- 
+2.43.2
+
