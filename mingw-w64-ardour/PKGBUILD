@@ -6,7 +6,7 @@ _commit=c35515e43d65bac23c89ae11cfbf2fed8c8f46b6  # refs/tags/8.4^{}
 pkgrel=1
 pkgdesc="Professional-grade digital audio workstation (mingw-w64)"
 arch=(any)
-mingw_arch=('mingw64' 'ucrt64' 'clang64')
+mingw_arch=('mingw64' 'ucrt64') # no jack2 on clang :(
 url="https://ardour.org/"
 msys2_references=(
   'archlinux: ardour'
@@ -143,6 +143,9 @@ build() {
     --optimize
     --ptformat
     --with-backends="portaudio,dummy,jack"
+    --out="${srcdir}/build-${MSYSTEM}"
+    --check-cxx-compiler=cxx
+    --check-c-compiler=cc
   )
   #waf expects CC and CXX to be path variables
   unset CC
