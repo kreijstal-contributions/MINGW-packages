@@ -141,13 +141,13 @@ build() {
     --no-phone-home
     --optimize
     --ptformat
-    --use-external-libs
     --with-backends="portaudio,dummy,jack"
   )
-
+  #waf expects CC and CXX to be path variables
+  unset CC
+  unset CXX
   cd $_realname
   export LINKFLAGS="$LDFLAGS"
-  env > env_before_makepkg.txt
   python waf configure -vvv --check-cxx-compiler=g++ --check-c-compiler=gcc "${waf_configure_options[@]}"
   python waf build -v
 }
