@@ -1,15 +1,10 @@
-From 8a08778754f5263cc35839b1e9718bc918a6fff3 Mon Sep 17 00:00:00 2001
-From: Kreijstal <rainb@tfwno.gf>
-Date: Mon, 26 Feb 2024 23:28:54 +0100
-Subject: [PATCH] Also, here is the required patches to solve some linking
+Also, here is the required patches to solve some linking
  issue.
-
+Patches by biswa96
 ---
  gtk2_ardour/wscript | 2 +-
  libs/ardour/wscript | 2 ++
  libs/fst/wscript    | 2 ++
- wscript             | 3 ---
- 4 files changed, 5 insertions(+), 4 deletions(-)
 
 diff --git a/gtk2_ardour/wscript b/gtk2_ardour/wscript
 index 0869f99a23..c2dcdf5600 100644
@@ -64,20 +59,6 @@ index 725cd9ec15..df174a38ef 100644
              obj.linkflags = ['-mwindows']
  
          if re.search ("bsd", sys.platform) != None:
-diff --git a/wscript b/wscript
-index d1c05a298b..f29233dc5e 100644
---- a/wscript
-+++ b/wscript
-@@ -1286,9 +1286,6 @@ int main () { int x = SFC_RF64_AUTO_DOWNGRADE; return 0; }
-                       lib='regex', uselib_store="REGEX", define_name='HAVE_REGEX_H')
-         # TODO put this only where it is needed
-         conf.env.append_value('LIB', 'regex')
--        conf.env.append_value('LIB', 'bcrypt')
--        conf.env.append_value('LIB', 'fftw3f_threads')
--
-         # TODO this should only be necessary for a debug build
-         conf.env.append_value('LIB', 'dbghelp')
-     
--- 
+- 
 2.43.2
 
