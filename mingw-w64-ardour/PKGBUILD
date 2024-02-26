@@ -68,7 +68,7 @@ makedepends=(
   ${MINGW_PACKAGE_PREFIX}-sratom
   unzip
   ${MINGW_PACKAGE_PREFIX}-vamp-plugin-sdk
-  #${MINGW_PACKAGE_PREFIX}-waf
+  ${MINGW_PACKAGE_PREFIX}-waf
 )
 optdepends=(
   'harvid: for video timeline and MP3 export'
@@ -119,16 +119,16 @@ prepare() {
 
   # Fixes to use system waf:
   # making sure, that subdirectories can be picked up with local includes
-  #touch __init__.py
+  touch __init__.py
   # making ancient 'misc.py' include available to system installed waf
-  #sed -e "s/('misc')/('misc', tooldir='tools')/" \
-  #    -i {gtk2_ardour,headless,luasession,session_utils,libs/fst}/wscript
+  sed -e "s/('misc')/('misc', tooldir='tools')/" \
+      -i {gtk2_ardour,headless,luasession,session_utils,libs/fst}/wscript
   # make custom 'autowaf' include compatible with system installed waf
-  #find . -type f \
-  #       -iname "*wscript*" \
-  #       -exec sed -e 's/from waflib.extras import autowaf/from tools import autowaf/g' \
-  #                 -e 's/import waflib.extras.autowaf/from tools import autowaf/g' \
-  #                 -i {} \;
+  find . -type f \
+         -iname "*wscript*" \
+         -exec sed -e 's/from waflib.extras import autowaf/from tools import autowaf/g' \
+                   -e 's/import waflib.extras.autowaf/from tools import autowaf/g' \
+                   -i {} \;
 }
 
 build() {
