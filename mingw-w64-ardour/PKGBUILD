@@ -4,7 +4,7 @@ pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=8.4
 _commit=c35515e43d65bac23c89ae11cfbf2fed8c8f46b6  # refs/tags/8.4^{}
 pkgrel=1
-pkgdesc="Professional-grade digital audio workstation"
+pkgdesc="Professional-grade digital audio workstation (mingw-w64)"
 arch=(any)
 mingw_arch=('mingw64' 'ucrt64' 'clang64')
 url="https://ardour.org/"
@@ -60,6 +60,7 @@ makedepends=(
   ${MINGW_PACKAGE_PREFIX}-lilv
   ${MINGW_PACKAGE_PREFIX}-lv2
   ${MINGW_PACKAGE_PREFIX}-pango
+  ${MINGW_PACKAGE_PREFIX}-pkgconf
   ${MINGW_PACKAGE_PREFIX}-pangomm
   ${MINGW_PACKAGE_PREFIX}-readline
   ${MINGW_PACKAGE_PREFIX}-rubberband
@@ -148,8 +149,8 @@ build() {
   unset CXX
   cd $_realname
   export LINKFLAGS="$LDFLAGS"
-  python waf configure -vvv --check-cxx-compiler=g++ --check-c-compiler=gcc "${waf_configure_options[@]}"
-  python waf build -v
+  python waf configure "${waf_configure_options[@]}"
+  python waf build 
 }
 
 package() {
@@ -185,8 +186,8 @@ package() {
 
   (
     cd $pkgname
-    waf i18n --destdir="$pkgdir"
-    waf install --destdir="$pkgdir"
+    #waf i18n --destdir="${pkgdir}"
+    waf install --destdir="$Ppkgdir}"
     install -vDm 644 $_realname.1 -t "$pkgdir${MINGW_PREFIX}/share/man/man1/"
   )
 
