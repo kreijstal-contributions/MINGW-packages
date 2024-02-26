@@ -86,7 +86,6 @@ provides=(
 source=(
   $_realname::git+https://github.com/$_realname/$_realname.git#tag=$_commit
   $_realname-midi-$pkgver.zip::http://stuff.$_realname.org/loops/ArdourBundledMedia.zip
-  $_realname-7.0-re-vendor_qm-dsp.patch
   0001-msys2-libraries-that-it-needs-to-link.patch
   0002-remove-glib-deprecated-functions.patch
 )
@@ -94,12 +93,10 @@ noextract=($_realname-midi-$pkgver.zip)
 sha512sums=('SKIP'
             '94b681f989e834f5de25ce87da9c174b11d90617063f8c96147d7eb470391b35f6d54b85de16da8d963cacb01b50d1c1fab0fddd18eb3b086fe17124ecfa4f65'
             'a3da14925bc25d8a57ba3e137c4b2b04010054667ac4ae2aec116ce6c157b03c9dd76bf4d73c313022282362d19b91683f062d6ab2ee0c73a576d3fa6272bd1d'
-            'c0aab33183c630bc0c3eb3c1f3299b305d0d8634a8822b39d24bcd38cccac98173eb7a49b0a38dcd4d6c4f9eee47c505637c9b2bed616b517b5957eea20f5c58'
             'fc1c19ef8c08020172c1da7eb5ae4906c0f900cdc1c87fa86dc8540ab7f1f16202c4dbd24c5f5eb9f12fbddf868968c72f25b86c16ff7e3f08210372d119e3c7')
 b2sums=('SKIP'
         'e31be6b51a217e2f7f799aa1d6e8c3cd024d80ab2d8d4371496a2b8bf0215749979217b565909841a346d6b3128fbfd674d2fae64b9fe741a5b418cd184c23be'
         '73845adce9a48938cd7aef5fbc65f492e470de316620d278365d247c80caef44531e850fbd3d2f5de65a8562e67aabfd982c938439bd3670726a27bc003be017'
-        'a0324af9363dd77a5ab7b7924ebcc73cd8227b6f6d44b21f0a93d6dfe4c4c67d7cbe727088536cc63f0e02deda928b8d9c03dc85e7057f438dbd603225f76888'
         '96593b52ba484065fb755c7aa7ae46e2c883bb1902e0d947dbad84afba9cf4681328902788bfe002fd02af5cd8949aae94156573a6d6dbff08dc5b5250dd2db7')
 
 pkgver() {
@@ -108,8 +105,6 @@ pkgver() {
 }
 
 prepare() {
-  # using vendored version of qm-dsp because qm-dsp >= 1.8.0 is not compatible
-  patch -Np1 -d $_realname -i ../$_realname-7.0-re-vendor_qm-dsp.patch
   patch -Np1 -d $_realname -i ../0001*.patch
   patch -Np1 -d $_realname -i ../0002*.patch
 
@@ -144,12 +139,15 @@ build() {
     --ptformat
     --with-backends="portaudio,dummy,jack"
     --out="${srcdir}/build-${MSYSTEM}"
-    --check-cxx-compiler=cxx
-    --check-c-compiler=cc
+    --check-cxx-compiler=g++
+    --check-c-compiler=gcc
   )
-  #waf expects CC and CXX to be path variables
+  #waf expects CC and CXX to be complete path variables, in case it is set, it will NOT check path
   unset CC
   unset CXX
+  export WAF_NO_PREFORK=1
+  export CFLAGS+=" -Wno-deprecated-declarations"
+  export CXXFLAGS+=" -Wno-deprecated-declarations"
   cd $_realname
   export LINKFLAGS="$LDFLAGS"
   python waf configure "${waf_configure_options[@]}"
@@ -188,9 +186,9 @@ package() {
   )
 
   (
-    cd $pkgname
+    cd $_realname
     #waf i18n --destdir="${pkgdir}"
-    waf install --destdir="$Ppkgdir}"
+    waf install --destdir="${pkgdir}"
     install -vDm 644 $_realname.1 -t "$pkgdir${MINGW_PREFIX}/share/man/man1/"
   )
 
