@@ -156,33 +156,33 @@ build() {
 
 package() {
   depends+=(
-    alsa-lib libasound.dll
-    aubio libaubio.dll
-    cairomm libcairomm-1.0.dll
-    curl libcurl.dll
-    dbus libdbus-1.dll
-    fftw libfftw3f.dll libfftw3f_threads.dll
-    fluidsynth libfluidsynth.dll
-    fontconfig libfontconfig.dll
-    glib2 libglib-2.0.dll libgobject-2.0.dll
-    glibmm libglibmm-2.4.dll
-    jack libjack.dll
-    libarchive libarchive.dll
-    liblo liblo.dll
-    liblrdf liblrdf.dll
-    libltc libltc.dll
-    libpng libpng16.dll
-    libsamplerate libsamplerate.dll
-    libsndfile libsndfile.dll
-    libusb libusb-1.0.dll
-    libwebsockets libwebsockets.dll
-    libxml2 libxml2.dll
-    lilv liblilv-0.dll
-    pango libpango-1.0.dll libpangocairo-1.0.dll libpangoft2-1.0.dll
-    pangomm libpangomm-1.4.dll
-    readline libreadline.dll
-    rubberband librubberband.dll
-    vamp-plugin-sdk libvamp-hostsdk.dll libvamp-sdk.dll
+#    alsa-lib libasound.dll
+#    aubio libaubio.dll
+#    cairomm libcairomm-1.0.dll
+#    curl libcurl.dll
+#    dbus libdbus-1.dll
+#    fftw libfftw3f.dll libfftw3f_threads.dll
+#    fluidsynth libfluidsynth.dll
+#    fontconfig libfontconfig.dll
+#    glib2 libglib-2.0.dll libgobject-2.0.dll
+#    glibmm libglibmm-2.4.dll
+#    jack libjack.dll
+#    libarchive libarchive.dll
+#    liblo liblo.dll
+#    liblrdf liblrdf.dll
+#    libltc libltc.dll
+#    libpng libpng16.dll
+#    libsamplerate libsamplerate.dll
+#    libsndfile libsndfile.dll
+#    libusb libusb-1.0.dll
+#    libwebsockets libwebsockets.dll
+#    libxml2 libxml2.dll
+#    lilv liblilv-0.dll
+#    pango libpango-1.0.dll libpangocairo-1.0.dll libpangoft2-1.0.dll
+#    pangomm libpangomm-1.4.dll
+#    readline libreadline.dll
+#    rubberband librubberband.dll
+#    vamp-plugin-sdk libvamp-hostsdk.dll libvamp-sdk.dll
   )
 
   (
