@@ -191,7 +191,7 @@ package() {
     export pkgdir=$pkgdir
     export _realname=$_realname
     #bash # to debug
-    waf install --destdir="../build-${MSYSTEM}"
+    waf install --destdir="$(cygpath -w $pkgdir)"
     install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"
   )
 
