@@ -130,6 +130,8 @@ prepare() {
 build() {
   local waf_configure_options=(
     --prefix=${MINGW_PREFIX}
+    --check-c-compiler=${CC}
+    --check-cxx-compiler=${CXX}
     --dist-target=mingw 
     --configdir=/share
     --cxx11
@@ -139,8 +141,6 @@ build() {
     --ptformat
     --with-backends="portaudio,dummy,jack"
     --out="${srcdir}/build-${MSYSTEM}"
-    --check-cxx-compiler=g++
-    --check-c-compiler=gcc
   )
   #waf expects CC and CXX to be complete path variables, in case it is set, it will NOT check path
   unset CC
@@ -150,7 +150,7 @@ build() {
   export CXXFLAGS+=" -Wno-deprecated-declarations"
   cd $_realname
   export LINKFLAGS="$LDFLAGS"
-  waf configure "${waf_configure_options[@]}"
+  MSYS2_ARG_CONV_EXCL="--prefix=" waf configure "${waf_configure_options[@]}"
   waf build 
 }
 
@@ -191,7 +191,7 @@ package() {
     export pkgdir=$pkgdir
     export _realname=$_realname
     #bash # to debug
-    waf install --destdir="../build-${MSYSTEM}"
+    waf install --destdir="${pkgdir}${MINGW_PREFIX}"
     install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"
   )
 
@@ -199,6 +199,8 @@ package() {
   cd "${srcdir}/build-${MSYSTEM}"
   install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
   unzip $srcdir/../$_realname-midi-$pkgver.zip -d $(cygpath -w "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/")
+  export pkgdir=$pkgdir
+  #bash
 #  install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/licenses/$pkgname/"
 #  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
 #  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
