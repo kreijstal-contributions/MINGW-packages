@@ -150,8 +150,8 @@ build() {
   export CXXFLAGS+=" -Wno-deprecated-declarations"
   cd $_realname
   export LINKFLAGS="$LDFLAGS"
-  #python waf configure "${waf_configure_options[@]}"
-  #python waf build 
+  waf configure "${waf_configure_options[@]}"
+  waf build 
 }
 
 package() {
