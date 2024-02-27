@@ -166,9 +166,9 @@ package() {
   # installation of MIDI files is a bit of a horrorshow, as upstream is not flexible about tarball naming, etc.
   cd "${srcdir}/build-${MSYSTEM}"
   MSYS2_ARG_CONV_EXCL="-d" unzip $srcdir/../$_realname-midi-$pkgver.zip -d $(cygpath -w "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/")
-#  install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/licenses/$pkgname/"
-#  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
-#  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
-#  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Progressions/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.progressions"
+  install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/"
+  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
+  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
+  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Progressions/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.progressions"
 }
 # vim:set ts=2 sw=2 et:
