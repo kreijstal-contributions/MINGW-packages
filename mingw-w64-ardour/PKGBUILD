@@ -192,7 +192,7 @@ package() {
     export _realname=$_realname
     #bash # to debug
     waf install --destdir="../build-${MSYSTEM}"
-    install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/minstall -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"an/man1/"
+    install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"
   )
 
   # installation of MIDI files is a bit of a horrorshow, as upstream is not flexible about tarball naming, etc.
