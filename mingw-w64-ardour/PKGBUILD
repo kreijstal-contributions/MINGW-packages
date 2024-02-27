@@ -190,14 +190,15 @@ package() {
     #waf i18n --destdir="${pkgdir}"
     export pkgdir=$pkgdir
     export _realname=$_realname
-    #bash # to debug
-    waf install --destdir="${pkgdir}${MINGW_PREFIX}"
+    #bash # to debug  
+    echo Install destination :--destdir="$(cygpath -w $pkgdir)" 
+    MSYS2_ARG_CONV_EXCL="--prefix=" waf install --destdir="$(cygpath -w $pkgdir)"
     install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"
   )
 
   # installation of MIDI files is a bit of a horrorshow, as upstream is not flexible about tarball naming, etc.
   cd "${srcdir}/build-${MSYSTEM}"
-  install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
+YS2_ARG_CONV_EXCL=
   unzip $srcdir/../$_realname-midi-$pkgver.zip -d $(cygpath -w "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/")
   export pkgdir=$pkgdir
   #bash
