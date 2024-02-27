@@ -150,8 +150,8 @@ build() {
   export CXXFLAGS+=" -Wno-deprecated-declarations"
   cd $_realname
   export LINKFLAGS="$LDFLAGS"
-  python waf configure "${waf_configure_options[@]}"
-  python waf build 
+  #python waf configure "${waf_configure_options[@]}"
+  #python waf build 
 }
 
 package() {
@@ -188,14 +188,17 @@ package() {
   (
     cd $_realname
     #waf i18n --destdir="${pkgdir}"
-    waf install --destdir="$(cygpath -w $pkgdir)"
-    install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"
+    export pkgdir=$pkgdir
+    export _realname=$_realname
+    #bash # to debug
+    waf install --destdir="../build-${MSYSTEM}"
+    install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/minstall -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"an/man1/"
   )
 
   # installation of MIDI files is a bit of a horrorshow, as upstream is not flexible about tarball naming, etc.
   cd "${srcdir}/build-${MSYSTEM}"
   install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
-  unzip $_realname-midi-$pkgver.zip -d "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
+  unzip $srcdir/../$_realname-midi-$pkgver.zip -d "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
   install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/licenses/$pkgname/"
   ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
   ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
