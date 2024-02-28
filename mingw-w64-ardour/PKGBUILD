@@ -170,7 +170,6 @@ package() {
   ls -la "${pkgdir}${MINGW_PREFIX}/share"
   ls -la "${pkgdir}${MINGW_PREFIX}/share/licenses"
   ls -la "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname"
-  ls -la "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
   ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
   ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
   ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Progressions/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.progressions"
