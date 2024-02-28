@@ -69,7 +69,8 @@ makedepends=(
   ${MINGW_PACKAGE_PREFIX}-sratom
   unzip
   ${MINGW_PACKAGE_PREFIX}-vamp-plugin-sdk
-  ${MINGW_PACKAGE_PREFIX}-waf
+  #${MINGW_PACKAGE_PREFIX}-waf
+  python
 )
 optdepends=(
   'harvid: for video timeline and MP3 export'
@@ -150,28 +151,21 @@ build() {
   export CXXFLAGS+=" -Wno-deprecated-declarations"
   cd $_realname
   export LINKFLAGS="$LDFLAGS"
-  MSYS2_ARG_CONV_EXCL="--prefix=;--configdir" waf configure "${waf_configure_options[@]}"
-  waf build 
+  /usr/bin/python waf configure "${waf_configure_options[@]}"
+  /usr/bin/python waf build 
 }
 
 package() {
   (
     cd $_realname
-    waf i18n --destdir="${pkgdir}"
-    echo Install destination :--destdir="$(cygpath -w $pkgdir)" 
-    waf install --destdir="${pkgdir}"
+    /usr/bin/python waf i18n --destdir="${pkgdir}"
+    #echo Install destination :--destdir="$(cygpath -w $pkgdir)"  is $pkgdir is ${pkgdir} 
+    /usr/bin/python waf install --destdir="${pkgdir}" --libdir="${MINGW_PREFIX}/lib" --prefix=${MINGW_PREFIX}
     install -vDm 644 $_realname.1 -t "${pkgdir}${MINGW_PREFIX}/share/man/man1/"
   )
 
   # installation of MIDI files is a bit of a horrorshow, as upstream is not flexible about tarball naming, etc.
   cd "${srcdir}/build-${MSYSTEM}"
-  MSYS2_ARG_CONV_EXCL="-d" unzip $srcdir/../$_realname-midi-$pkgver.zip -d $(cygpath -w "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/")
-  install -vdm 755 "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/"
-  ls -la "${pkgdir}${MINGW_PREFIX}/share"
-  ls -la "${pkgdir}${MINGW_PREFIX}/share/licenses"
-  ls -la "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname"
-  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Beats/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.beats"
-  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Chords/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.chords"
-  ln -s "${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/MIDI Progressions/LICENSE" "${pkgdir}${MINGW_PREFIX}/share/licenses/$_realname/LICENSE.progressions"
+  unzip $srcdir/../$_realname-midi-$pkgver.zip -d "$pkgdir${MINGW_PREFIX}/share/$_realname${pkgver/.*/}/media/"
 }
 # vim:set ts=2 sw=2 et:
