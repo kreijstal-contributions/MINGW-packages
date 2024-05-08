@@ -10,6 +10,7 @@ arch=('any')
 mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
 url='https://github.com/google/sentencepiece'
 license=('Apache-2.0')
+depends=("${MINGW_PACKAGE_PREFIX}-sentencepiece")
 makedepends=("${MINGW_PACKAGE_PREFIX}-python-build" "${MINGW_PACKAGE_PREFIX}-python-installer")
 source=("https://github.com/google/sentencepiece/archive/v${pkgver}.tar.gz"
         "0001-make-it-more-friendly-for-mingw-enviroments.patch")
