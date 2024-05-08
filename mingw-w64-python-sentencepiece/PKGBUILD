@@ -13,7 +13,8 @@ license=('Apache-2.0')
 depends=("${MINGW_PACKAGE_PREFIX}-sentencepiece")
 makedepends=("${MINGW_PACKAGE_PREFIX}-python-build"
 "${MINGW_PACKAGE_PREFIX}-python-installer" 
-"${MINGW_PACKAGE_PREFIX}-python-setuptools"
+"${MINGW_PACKAGE_PREFIX}-python-setuptools
+"${MINGW_PACKAGE_PREFIX}-protobuf"
 "${MINGW_PACKAGE_PREFIX}-python-wheel")
 source=("https://github.com/google/sentencepiece/archive/v${pkgver}.tar.gz"
         "0001-make-it-more-friendly-for-mingw-enviroments.patch")
