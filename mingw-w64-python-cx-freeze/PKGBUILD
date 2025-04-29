@@ -6,14 +6,14 @@
 _realname=cx-freeze
 pkgbase=mingw-w64-python-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-python-${_realname}")
-pkgver=7.2.9
+pkgver=7.2.10
 pkgrel=1
 pkgdesc="Creates standalone executables from Python scripts, with the same performance (mingw-w64)"
 arch=('any')
-mingw_arch=('mingw64' 'ucrt64' 'clang64')
+mingw_arch=('mingw64' 'ucrt64' 'clang64' 'clangarm64')
 url="https://github.com/marcelotduarte/cx_Freeze/"
 msys2_references=(
-  'pypi: cx-Freeze'
+  'purl: pkg:pypi/cx-freeze'
 )
 license=('spdx:PSF-2.0')
 depends=(
@@ -22,8 +22,10 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-python-pip"
   "${MINGW_PACKAGE_PREFIX}-python-setuptools"
   "${MINGW_PACKAGE_PREFIX}-python-cx-logging"
-  "${MINGW_PACKAGE_PREFIX}-python-lief"
 )
+if [ "${CARCH}" != "aarch64" ]; then
+    depends+=("${MINGW_PACKAGE_PREFIX}-python-lief")
+fi
 makedepends=(
   "${MINGW_PACKAGE_PREFIX}-python-build"
   "${MINGW_PACKAGE_PREFIX}-python-installer"
@@ -43,7 +45,7 @@ source=(
   "https://pypi.org/packages/source/${_realname::1}/${_realname/-/_}/${_realname/-/_}-${pkgver}.tar.gz"
 )
 sha256sums=(
-  '5aae3089b62d6863c0661d1c3117505ab0ae0f8962e1feca137329a175c9979d'
+  '16a6eb37db7d158d0eb4bba8b93a135b6c85ea4bf2c4176c437bc34f01067e61'
 )
 
 prepare() {
