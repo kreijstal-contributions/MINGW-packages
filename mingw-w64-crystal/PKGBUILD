@@ -1,11 +1,11 @@
 # Maintainer: Quinton Miller <nicetas.c@gmail.com>
 
-_bootstrap=0
+_bootstrap=1
 _realname=crystal
 pkgbase="mingw-w64-${_realname}"
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=1.15.1
-pkgrel=2
+pkgver=1.16.1
+pkgrel=1
 pkgdesc="Fast and statically typed, compiled language with Ruby-like syntax (mingw-w64)"
 arch=('any')
 mingw_arch=('ucrt64' 'mingw64' 'clang64')
@@ -31,15 +31,15 @@ depends=(
   "${MINGW_PACKAGE_PREFIX}-zlib"
 )
 makedepends=(
-  "git"
   "${MINGW_PACKAGE_PREFIX}-llvm"
   $( (( _bootstrap )) || echo "${MINGW_PACKAGE_PREFIX}-crystal")
+  "git"
 )
 checkdepends=(
   "${MINGW_PACKAGE_PREFIX}-lld" # needed for linking std_spec
 )
-source=("$pkgname-$pkgver::git+${msys2_repository_url}.git#tag=${pkgver}")
-sha256sums=('626fed60399d7f1dc83e2e5a2ecde20d235e19a3dcf6d70d6f52ec4de063b32b')
+source=("${_realname}::git+${msys2_repository_url}.git#tag=${pkgver}")
+sha256sums=('df2f365ff924feed11b835d1afba60ea4a2586226ecf150882dce9da342a07a0')
 
 if (( _bootstrap ))
 then
@@ -49,18 +49,17 @@ then
 fi
 
 prepare() {
-  cd "$pkgname-$pkgver"
-  if test true != "$(git config core.symlinks)"
-  then
+  cd "${_realname}"
+
+  if test true != "$(git config core.symlinks)"; then
     git config core.symlinks true &&
     MSYS='winsymlinks:nativestrict' git restore --source=HEAD :/
   fi
 }
 
 build() {
-  cd "$pkgname-$pkgver"
-  if (( _bootstrap ))
-  then
+  cd "${_realname}"
+  if (( _bootstrap )); then
     CRYSTAL="$srcdir/bin/crystal.exe" make interpreter=1 release=1
   else
     make interpreter=1 release=1
@@ -68,12 +67,12 @@ build() {
 }
 
 check() {
-  cd "$pkgname-$pkgver"
+  cd "${_realname}"
   # the full suite is run on the crystal-lang/crystal repo's own CI
   CRYSTAL_SPEC_COMPILER_BIN="$(pwd)/.build/crystal.exe" make std_spec
 }
 
 package() {
-  cd "$pkgname-$pkgver"
+  cd "${_realname}"
   make install DESTDIR="$pkgdir" PREFIX="${MINGW_PREFIX}" deref_symlinks=1
 }

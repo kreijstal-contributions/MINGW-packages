@@ -1,10 +1,10 @@
-# Maintainer: Konstantin Podsvirov <konstantin@podsvirov.pro>
+# Maintainer: Konstantin Podsvirov <konstantin@podsvirov.su>
 
 _basename=leptos
 _realname=cargo-${_basename}
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=0.2.29
+pkgver=0.2.32
 pkgrel=1
 pkgdesc='Build tool for Leptos (mingw-w64)'
 arch=('any')
@@ -20,9 +20,11 @@ depends=("${MINGW_PACKAGE_PREFIX}-binaryen"
          "${MINGW_PACKAGE_PREFIX}-cargo-generate"
          "${MINGW_PACKAGE_PREFIX}-rust-wasm")
 makedepends=("${MINGW_PACKAGE_PREFIX}-lld"
-             "${MINGW_PACKAGE_PREFIX}-rust")
+             "${MINGW_PACKAGE_PREFIX}-rust"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-openssl")
 source=("${msys2_repository_url}/archive/v${pkgver}/${_realname}-${pkgver}.tar.gz")
-sha256sums=('e74d5313319f316ae1e8c06d39022ea8a153853f1f1cbb6e454ad151d0e19f61')
+sha256sums=('b5d71326ca582bd51aefce9917e4b1b417e8e85c1ce0676af2406c8f42be59cb')
 
 prepare() {
   cd "${srcdir}/${_realname}-${pkgver}"
@@ -35,6 +37,7 @@ build() {
   cd "build-${MSYSTEM}"
 
   export RUSTFLAGS="$RUSTFLAGS -C link-arg=-fuse-ld=lld"
+  export OPENSSL_NO_VENDOR=1
 
   "${MINGW_PREFIX}/bin/cargo.exe" build \
     --release \

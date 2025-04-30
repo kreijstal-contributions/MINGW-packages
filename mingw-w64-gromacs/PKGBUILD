@@ -3,11 +3,11 @@
 _realname=gromacs
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-pkgver=2025.0
-pkgrel=1
+pkgver=2025.1
+pkgrel=2
 pkgdesc="A free and open-source software suite for high-performance molecular dynamics and output analysis. (mingw-w64)"
 arch=('any')
-mingw_arch=('ucrt64' 'clang64')
+mingw_arch=('ucrt64' 'clang64' 'clangarm64')
 url='https://www.gromacs.org/'
 msys2_repository_url="https://gitlab.com/gromacs/gromacs"
 license=('spdx:LGPL-2.1-or-later')
@@ -24,11 +24,11 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-python")
 source=("https://ftp.gromacs.org/gromacs/${_realname}-${pkgver}.tar.gz"
         "001-fix-pkgconfig-file.patch"
-        "002-include-missing-header.patch")
+        "002-fix-missing-define.patch")
 noextract=("${_realname}-${pkgver}.tar.gz")
-sha256sums=('a27ad35a646295bbec129abe684d9d03d1e2e0bd76b0d625e9055746aaefae82'
+sha256sums=('0adf621a80fd8043f8defec84ce02811c0cdf42a052232890932d81f25c4d28a'
             '5ecd85134a454de8d1b0f9ba94fcd54c005d47ea162b776a596dc42451dbc632'
-            '086d43cc4a22b60fdbec19fbf56c6f984143f52fdeb885947d2e10b663b5cffd')
+            '7e29701fc4872ca4e33bc91d3e7bf77d14c803fb146a65c23b7c1c4d84a1b1fd')
 
 apply_patch_with_msg() {
   for _patch in "$@"
@@ -45,7 +45,7 @@ prepare() {
 
   apply_patch_with_msg \
     001-fix-pkgconfig-file.patch \
-    002-include-missing-header.patch
+    002-fix-missing-define.patch
 }
 
 build() {

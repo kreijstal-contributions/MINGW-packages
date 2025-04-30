@@ -4,7 +4,7 @@ _realname=jj
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}"
          "${MINGW_PACKAGE_PREFIX}-${_realname}-docs")
-pkgver=0.26.0
+pkgver=0.28.2
 pkgrel=1
 pkgdesc="Jujutsu (an experimental VCS) (mingw-w64)"
 arch=('any')
@@ -23,10 +23,8 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-rust"
              'git')
 depends=("${MINGW_PACKAGE_PREFIX}-libgit2"
          "${MINGW_PACKAGE_PREFIX}-libssh2")
-source=("git+${url}.git#tag=v${pkgver}"
-        "https://github.com/jj-vcs/jj/pull/5315.patch")
-sha256sums=('94917e37c95cfc56c2b1dba1e9953f63126041a87da311d2415f21ef96f2d19e'
-            '20d335c3fd3de1ffbfc41c89fcfcfba55755a7b546dfe91eeb92cabf14d75f8e')
+source=("git+${url}.git#tag=v${pkgver}")
+sha256sums=('c6b88a7aab49a1b60d3c9397f93f7077ac85f77027f4e28477e96a874aecdf6b')
 
 _env() {
   export OPENSSL_NO_VENDOR=1
@@ -36,9 +34,6 @@ _env() {
 
 prepare() {
   cd "${_realname}"
-
-  # https://github.com/jj-vcs/jj/pull/5315
-  patch -Np1 -i ../5315.patch
 
   cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
 }
