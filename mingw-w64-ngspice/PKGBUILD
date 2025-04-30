@@ -64,11 +64,12 @@ build() {
     --without-x
   )
 
+    #--enable-osdi
   # FS#45230, create so lib
   # shared lib sets flags and modifies headers, needs dedicated pass
   # adding --with-readline disables libngspice-0.dll
   if [[ ${MINGW_PACKAGE_PREFIX} == *-clang-* ]]; then
-    LDFLAGS+=" -lomp"
+    LDFLAGS+=" -lomp -no-undefined"
   fi
   ../${_realname}-${pkgver}/configure \
     --prefix=${MINGW_PREFIX} \
@@ -76,34 +77,35 @@ build() {
     --host=${MINGW_CHOST} \
     "${_common_flags[@]}" \
     --with-ngshared
-  make -j
 
-  mkdir -p "${srcdir}/build-static-${MSYSTEM}" && cd "${srcdir}/build-static-${MSYSTEM}"
+  make V=1 
+
+  #mkdir -p "${srcdir}/build-static-${MSYSTEM}" && cd "${srcdir}/build-static-${MSYSTEM}"
 
   # gcc is being weird
-  LDFLAGS+=" -lgdi32"
-  ../${_realname}-${pkgver}/configure \
-    "${_common_flags[@]}" \
-    --with-wingui
-  make -j
+  #LDFLAGS+=" -lgdi32"
+  #../${_realname}-${pkgver}/configure \
+  #  "${_common_flags[@]}" \
+  #  --with-wingui
+  #make -j
 
-  mkdir -p "${srcdir}/build-console-${MSYSTEM}" && cd "${srcdir}/build-console-${MSYSTEM}"
+  #mkdir -p "${srcdir}/build-console-${MSYSTEM}" && cd "${srcdir}/build-console-${MSYSTEM}"
 
-  LDFLAGS+=" -lgdi32"
-  ../${_realname}-${pkgver}/configure \
-    "${_common_flags[@]}" 
-  make -j
+  #LDFLAGS+=" -lgdi32"
+  #../${_realname}-${pkgver}/configure \
+  #  "${_common_flags[@]}" 
+  #make -j
 }
 
 package() {
-  cd "${srcdir}/build-console-${MSYSTEM}"
-  make DESTDIR="${pkgdir}" install
+  #cd "${srcdir}/build-console-${MSYSTEM}"
+  #make DESTDIR="${pkgdir}" install
 
   # Rename the console version of ngspice before installing others
-  mv "${pkgdir}${MINGW_PREFIX}"/bin/{ngspice,ngspice_con}.exe
+  #mv "${pkgdir}${MINGW_PREFIX}"/bin/{ngspice,ngspice_con}.exe
 
-  cd "${srcdir}/build-static-${MSYSTEM}"
-  make DESTDIR="${pkgdir}" install
+  #cd "${srcdir}/build-static-${MSYSTEM}"
+  #make DESTDIR="${pkgdir}" install
 
   cd "${srcdir}/build-shared-${MSYSTEM}"
   make DESTDIR="${pkgdir}" install
