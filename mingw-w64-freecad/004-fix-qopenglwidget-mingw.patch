@@ -1,0 +1,16 @@
+--- a/src/Gui/MainWindow.cpp
++++ b/src/Gui/MainWindow.cpp
+@@ -400,7 +400,12 @@ MainWindow::MainWindow(QWidget * parent, Qt::WindowFlags f)
+     //
+     // https://stackoverflow.com/questions/76026196/how-to-force-qt-to-use-the-opengl-window-type
++#ifndef __MINGW32__
+     auto _OpenGLWidget = new QOpenGLWidget(this);
+     _OpenGLWidget->move(QPoint(-100,-100));
++#else
++    // On MinGW, creating a hidden QOpenGLWidget causes Windows API errors
++    // (ERROR_INVALID_PARAMETER, exit code 87) that terminate the application.
++    // The OpenGL context will be created by Quarter widgets instead.
++#endif
+ #endif
+ 
+     // global access

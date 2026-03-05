@@ -22,6 +22,7 @@ depends=("${MINGW_PACKAGE_PREFIX}-cc-libs"
          "${MINGW_PACKAGE_PREFIX}-fmt"
          "${MINGW_PACKAGE_PREFIX}-freetype"
          "${MINGW_PACKAGE_PREFIX}-med"
+         "${MINGW_PACKAGE_PREFIX}-mesa"
          "${MINGW_PACKAGE_PREFIX}-omp"
          "${MINGW_PACKAGE_PREFIX}-opencascade"
          "${MINGW_PACKAGE_PREFIX}-openscad"
@@ -48,18 +49,20 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-fast_float"
              "${MINGW_PACKAGE_PREFIX}-microsoft-gsl"
              "${MINGW_PACKAGE_PREFIX}-utf8cpp")
-source=("https://github.com/FreeCAD/FreeCAD/archive/${pkgver}/${_realname}-${pkgver}.tar.gz"
-        "https://github.com/Ondsel-Development/OndselSolver/archive/${_OS_commit}/OndselSolver-${_OS_commit}.tar.gz"
-        "001-clang19-char-traits.patch"
-        "002-fix-build-with-qt-6.10.patch"
-        "https://github.com/FreeCAD/FreeCAD/commit/fe951f63.patch"
-        "https://github.com/FreeCAD/FreeCAD/commit/8547e798.patch")
-sha256sums=('228ee52f00627c7d8fa61998179deb01865ece69390829feb1300228d24f7e9e'
-            '890fb6ddeb1b42face95854689ff7b96c926c368b7d616d9e31e4b35f79ddde8'
-            '0dcc9a5ce20f080913f2bff71f5e2eb7d166e789f1012cea2009f94c9f30e5f2'
-            '03dd01d48920d902b02a3d62e2810bdc93b6bd7b68e5f901c0af93b0bc83eca0'
-            '9dc082a9c4be6c5794b16642bd7acd1975b8b4815af63d18be9ba9830b8508ff'
-            '1f9c1c044bd314747c11a77ede2f97764e7cc27a1b31d6535fccee3dcfd654cb')
+ source=("https://github.com/FreeCAD/FreeCAD/archive/${pkgver}/${_realname}-${pkgver}.tar.gz"
+         "https://github.com/Ondsel-Development/OndselSolver/archive/${_OS_commit}/OndselSolver-${_OS_commit}.tar.gz"
+         "001-clang19-char-traits.patch"
+         "002-fix-build-with-qt-6.10.patch"
+         "https://github.com/FreeCAD/FreeCAD/commit/fe951f63.patch"
+         "https://github.com/FreeCAD/FreeCAD/commit/8547e798.patch"
+         "003-fix-install-paths.patch")
+ sha256sums=('228ee52f00627c7d8fa61998179deb01865ece69390829feb1300228d24f7e9e'
+             '890fb6ddeb1b42face95854689ff7b96c926c368b7d616d9e31e4b35f79ddde8'
+             '0dcc9a5ce20f080913f2bff71f5e2eb7d166e789f1012cea2009f94c9f30e5f2'
+             '03dd01d48920d902b02a3d62e2810bdc93b6bd7b68e5f901c0af93b0bc83eca0'
+             '9dc082a9c4be6c5794b16642bd7acd1975b8b4815af63d18be9ba9830b8508ff'
+             '1f9c1c044bd314747c11a77ede2f97764e7cc27a1b31d6535fccee3dcfd654cb'
+             'SKIP')
 
 apply_patch_with_msg() {
   for _patch in "$@"
@@ -80,7 +83,30 @@ prepare() {
   # Fix Find Eigen3
   apply_patch_with_msg \
     fe951f63.patch \
-    8547e798.patch
+     8547e798.patch
+  # Fix install paths for MinGW - install Mod/Ext to lib/freecad
+  apply_patch_with_msg \
+    003-fix-install-paths.patch
+
+  # Fix QOpenGLWidget crash on MinGW - disable hidden QOpenGLWidget creation
+  # On MinGW, creating a hidden QOpenGLWidget at (-100,-100) causes Windows API
+  # error ERROR_INVALID_PARAMETER (exit code 87) that terminates the application.
+  sed -i '/auto _OpenGLWidget = new QOpenGLWidget/i #ifndef __MINGW32__' src/Gui/MainWindow.cpp
+  sed -i '/_OpenGLWidget->move(QPoint(-100,-100));/a #else\n    \/\/ On MinGW, creating a hidden QOpenGLWidget causes Windows API errors\n    \/\/ (ERROR_INVALID_PARAMETER, exit code 87) that terminate the application.\n    \/\/ The OpenGL context will be created by Quarter widgets instead.\n#endif' src/Gui/MainWindow.cpp
+
+  # Fix DESTINATION Mod paths without CMAKE_INSTALL_DATADIR
+  # Single-line patterns
+  find src -name "CMakeLists.txt" -exec sed -i 's|DESTINATION  *Mod/|DESTINATION ${CMAKE_INSTALL_DATADIR}/Mod/|g' {} \;
+  find src -name "CMakeLists.txt" -exec sed -i 's|DESTINATION "Mod/|DESTINATION "${CMAKE_INSTALL_DATADIR}/Mod/|g' {} \;
+  # Multi-line patterns (DESTINATION on one line, Mod/ on next line)
+  find src -name "CMakeLists.txt" -exec sed -i '/^[[:space:]]*DESTINATION$/{N;s|\(DESTINATION\n[[:space:]]*\)Mod/|\1${CMAKE_INSTALL_DATADIR}/Mod/|g}' {} \;
+  # Fix Ext/freecad/gui in Gui/CMakeLists.txt (multi-line: DESTINATION on one line, path on next)
+  sed -i '/^[[:space:]]*DESTINATION$/{N;s|\(DESTINATION\n[[:space:]]*\)Ext/freecad/gui|\1${CMAKE_INSTALL_DATADIR}/Ext/freecad/gui|g}' src/Gui/CMakeLists.txt
+  # Also fix the fc_copy_sources call
+  sed -i 's|${CMAKE_BINARY_DIR}/Ext/freecad/gui|${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Ext/freecad/gui|g' src/Gui/CMakeLists.txt
+
+  # Fix hardcoded AppHomePath in WizardShaft.py - use getResourceDir() instead
+  sed -i 's|FreeCAD.ConfigGet("AppHomePath") + "Mod/|FreeCAD.getResourceDir() + "Mod/|g' src/Mod/PartDesign/WizardShaft/WizardShaft.py
 
   # opencascade defines HAVE_TBB which makes FreeCAD uses TBB without linking to it.
   sed -i "s|HAVE_TBB|HAVE_NOT_TBB|g" src/Mod/Import/App/ImportOCAF.cpp

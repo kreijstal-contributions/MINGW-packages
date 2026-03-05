@@ -1,0 +1,75 @@
+--- a/cMake/FreeCAD_Helpers/ConfigureCMakeVariables.cmake
++++ b/cMake/FreeCAD_Helpers/ConfigureCMakeVariables.cmake
+@@ -10,6 +10,11 @@
+         set(CMAKE_INSTALL_DOCDIR doc CACHE PATH "Output directory for documentation and license files")
+         # Don't set it without manual adoption of LibDir variable in src/App/FreeCADInit.py
+         set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "Output directory for libraries")
++    elseif(MINGW)
++        include(GNUInstallDirs)
++        # Install Mod/Ext and .pyd files to lib/freecad (same location as Arch Linux)
++        set(CMAKE_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}/freecad" CACHE PATH "Output directory for libraries" FORCE)
++        set(CMAKE_INSTALL_DATADIR "${CMAKE_INSTALL_LIBDIR}" CACHE PATH "Output directory for data and resource files" FORCE)
+     else()
+         set(CMAKE_INSTALL_PREFIX "/usr/lib${LIB_SUFFIX}/freecad" CACHE PATH "Installation root directory")
+         include(GNUInstallDirs)
+
+--- a/src/App/FreeCADInit.py
++++ b/src/App/FreeCADInit.py
+@@ -75,9 +75,9 @@ FreeCAD._importFromFreeCAD = removeFromPath
+ 
+ def InitApplications():
+     # Checking on FreeCAD module path ++++++++++++++++++++++++++++++++++++++++++
+-    ModDir = FreeCAD.getHomePath()+'Mod'
++    ModDir = FreeCAD.getResourceDir()+'Mod'
+     ModDir = os.path.realpath(ModDir)
+-    ExtDir = FreeCAD.getHomePath()+'Ext'
++    ExtDir = FreeCAD.getResourceDir()+'Ext'
+     ExtDir = os.path.realpath(ExtDir)
+     BinDir = FreeCAD.getHomePath()+'bin'
+     BinDir = os.path.realpath(BinDir)
+
+--- a/cMake/FreeCAD_Helpers/SetupShibokenAndPyside.cmake
++++ b/cMake/FreeCAD_Helpers/SetupShibokenAndPyside.cmake
+@@ -114,7 +114,7 @@ macro(SetupShibokenAndPyside)
+         install(
+         DIRECTORY
+             ${CMAKE_BINARY_DIR}/Ext/PySide
+         DESTINATION
+-            Ext
++            ${CMAKE_INSTALL_DATADIR}/Ext
+         )
+     endif()
+ 
+
+--- a/src/3rdParty/lazy_loader/CMakeLists.txt
++++ b/src/3rdParty/lazy_loader/CMakeLists.txt
+@@ -7,6 +7,6 @@
+ )
+ SET_PYTHON_PREFIX_SUFFIX(lazy_loader)
+ 
+-fc_copy_sources(lazy_loader "${CMAKE_BINARY_DIR}/Ext/lazy_loader" ${lazy_loader})
+-install (FILES ${lazy_loader} DESTINATION "Ext/lazy_loader")
++fc_copy_sources(lazy_loader "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Ext/lazy_loader" ${lazy_loader})
++install (FILES ${lazy_loader} DESTINATION "${CMAKE_INSTALL_DATADIR}/Ext/lazy_loader")
+ 
+
+--- a/src/Ext/freecad/CMakeLists.txt
++++ b/src/Ext/freecad/CMakeLists.txt
+@@ -13,7 +13,7 @@ else()
+ 
+ SET(PYTHON_MAIN_DIR ${python_libs})
+ 
+-set(NAMESPACE_DIR "${CMAKE_BINARY_DIR}/Ext/freecad")
++set(NAMESPACE_DIR "${CMAKE_BINARY_DIR}/${CMAKE_INSTALL_DATADIR}/Ext/freecad")
+ set(NAMESPACE_INIT "${NAMESPACE_DIR}/__init__.py")
+ if (WIN32)
+     get_filename_component(FREECAD_LIBRARY_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}"
+@@ -45,7 +45,7 @@ foreach (it ${EXT_FILES})
+ if (INSTALL_TO_SITEPACKAGES)
+     SET(SITE_PACKAGE_DIR ${PYTHON_MAIN_DIR}/freecad)
+ else ()
+-    SET(SITE_PACKAGE_DIR Ext/freecad)
++    SET(SITE_PACKAGE_DIR ${CMAKE_INSTALL_DATADIR}/Ext/freecad)
+ endif()
+ 
+ INSTALL(
