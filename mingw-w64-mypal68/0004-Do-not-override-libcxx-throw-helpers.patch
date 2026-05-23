@@ -1,0 +1,11 @@
+--- a/config/gcc-stl-wrapper.template.h
++++ b/config/gcc-stl-wrapper.template.h
+@@ -57,7 +57,7 @@
+ // these __throw_*() functions will always throw exceptions (shades of
+ // -fshort-wchar).  We don't want that and so define our own inlined
+ // __throw_*().
+-#ifndef mozilla_throw_gcc_h
++#if !defined(mozilla_throw_gcc_h) && !defined(_LIBCPP_VERSION)
+ #  ifdef __cplusplus
+ extern "C++" {
+ #  endif

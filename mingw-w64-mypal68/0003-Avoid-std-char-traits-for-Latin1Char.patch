@@ -1,0 +1,38 @@
+--- a/js/src/builtin/intl/Locale.cpp
++++ b/js/src/builtin/intl/Locale.cpp
+@@ -170,6 +170,16 @@
+ 
+ /** Iterate through (sep keyword) in a valid, lowercased Unicode extension. */
+ template <typename CharT>
++static const CharT* FindChar(const CharT* begin, size_t length, CharT target) {
++  for (const CharT* p = begin, *end = begin + length; p < end; p++) {
++    if (*p == target) {
++      return p;
++    }
++  }
++  return nullptr;
++}
++
++template <typename CharT>
+ class SepKeywordIterator {
+   const CharT* iter_;
+   const CharT* const end_;
+@@ -202,8 +212,7 @@
+       iter_++;
+ 
+       // Find the next separator.
+-      iter_ = std::char_traits<CharT>::find(
+-          iter_, mozilla::PointerRangeSize(iter_, end_), CharT('-'));
++      iter_ = FindChar(iter_, mozilla::PointerRangeSize(iter_, end_), CharT('-'));
+       if (!iter_) {
+         return nullptr;
+       }
+@@ -861,7 +870,7 @@
+   size_t regionLength = 0;
+ 
+   // Search the first separator to find the end of the language subtag.
+-  if (const CharT* sep = std::char_traits<CharT>::find(baseName, length, '-')) {
++  if (const CharT* sep = FindChar(baseName, length, CharT('-'))) {
+     languageLength = sep - baseName;
+ 
+     // Add +1 to skip over the separator character.

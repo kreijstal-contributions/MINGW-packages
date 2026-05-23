@@ -1,0 +1,20 @@
+--- a/toolkit/crashreporter/client/crashreporter.cpp
++++ b/toolkit/crashreporter/client/crashreporter.cpp
+@@ -25,7 +25,7 @@
+ #include "nss.h"
+ #include "sechash.h"
+ 
+-using std::auto_ptr;
++using std::unique_ptr;
+ using std::ifstream;
+ using std::istream;
+ using std::istringstream;
+@@ -47,7 +47,7 @@
+ 
+ enum SubmissionResult { Succeeded, Failed };
+ 
+-static auto_ptr<ofstream> gLogStream(nullptr);
++static unique_ptr<ofstream> gLogStream(nullptr);
+ static string gReporterDumpFile;
+ static string gExtraFile;
+ static string gMemoryFile;

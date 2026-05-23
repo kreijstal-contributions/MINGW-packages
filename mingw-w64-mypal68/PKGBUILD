@@ -1,0 +1,167 @@
+# Maintainer: Mypal68 MSYS2 packagers
+
+_realname=mypal68
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=78.0.2
+pkgrel=1
+pkgdesc="Mypal 68 web browser for Windows XP and later (mingw-w64)"
+arch=('any')
+mingw_arch=('ucrt64' 'clang64')
+url="https://github.com/Feodor2/Mypal68"
+license=('MPL-2.0')
+depends=("${MINGW_PACKAGE_PREFIX}-cc-libs")
+makedepends=(
+  "${MINGW_PACKAGE_PREFIX}-cc"
+  "${MINGW_PACKAGE_PREFIX}-cbindgen"
+  "${MINGW_PACKAGE_PREFIX}-clang"
+  "${MINGW_PACKAGE_PREFIX}-fxc2"
+  "${MINGW_PACKAGE_PREFIX}-llvm-tools"
+  "${MINGW_PACKAGE_PREFIX}-nasm"
+  "${MINGW_PACKAGE_PREFIX}-rust"
+  "${MINGW_PACKAGE_PREFIX}-yasm"
+  autoconf2.13
+  diffutils
+  git
+  make
+  "${MINGW_PACKAGE_PREFIX}-nodejs"
+  patch
+  perl
+  python
+  python-setuptools
+  python-six
+  rsync
+  unzip
+  zip
+)
+options=('!strip' '!debug' '!lto')
+_patches=(
+  '0001-Apply-mypal68-packaging-patches.patch'
+  '0002-Use-gnullvm-rust-target-for-clang64.patch'
+  '0003-Avoid-std-char-traits-for-Latin1Char.patch'
+  '0004-Do-not-override-libcxx-throw-helpers.patch'
+  '0005-Use-vector-for-RLZ-machine-id-bytes.patch'
+  '0006-Move-prepare-source-edits-into-patch.patch'
+  '0007-Include-fstream-before-hunspell-fopen-hook.patch'
+  '0008-Use-unique-ptr-for-crashreporter-log-stream.patch'
+  '0009-Use-byte-traits-for-mozpkix-ByteString.patch'
+)
+source=(
+  "Mypal68-${pkgver}.tar.gz::https://github.com/Feodor2/Mypal68/archive/refs/tags/${pkgver}.tar.gz"
+  "${_patches[@]}"
+)
+sha256sums=(
+  '0a2bb9bd6fca767c70afa9d6a584a0b71bb48e4a66f2d3885a598bf425699c4c'
+  '5395ce107cc7b591db6d78820c4c0e521f944e436b9bc9b989f87886247dec14'
+  '5383d2698a824c37e601ee193dbf6a5662dfe0ce552ccd2241efcba0b151bd5d'
+  'ee9bed298adda7478c048ace2a998876352f2e7e8d457cd84ec0527fb2cc1bab'
+  '571de93a9c8443621a6fdff67542027495856409a05d895413d3cf84de5c7f1f'
+  '405278ce21cfad738b41c36459684e17790db887e557374683b9405af56001cf'
+  '8f1ac8cd1a1b78cbfb6cd1995fd1e20623fbcaa6af77e5d88be720c0172c1fd1'
+  '203e700cfa754346d5fcfbde0a3f894e11fcfa4b9cbc0abfe602649f39b44373'
+  'f40d047811613fa43a9b082165fc4cdc654ae5e7790acfe9766fd2ea0ad9bb9b'
+  'd204985c28e0f15b4d94902bf4093c684f3e44d6ecb9c511c7eccb9989decfc4'
+)
+
+prepare() {
+  cd "${srcdir}/Mypal68-${pkgver}"
+
+  for patch in "${srcdir}"/*.patch; do
+    patch --binary -Np1 --forward --ignore-whitespace -i "${patch}"
+  done
+
+  # Some vendored Rust crates reference binary/test artifacts that are
+  # intentionally not carried in this source package patch.
+  find third_party/rust -name .cargo-checksum.json -print0 |
+    xargs -0 perl -MJSON::PP -e '
+      for my $path (@ARGV) {
+        local $/;
+        open my $in, "<", $path or die "$path: $!";
+        my $text = <$in>;
+        close $in;
+        next unless length $text;
+        my $dir = $path;
+        $dir =~ s#/\.cargo-checksum\.json$##;
+        my $json = decode_json($text);
+        for my $file (keys %{ $json->{files} }) {
+          delete $json->{files}{$file} unless -e "$dir/$file";
+        }
+        open my $out, ">", $path or die "$path: $!";
+        print {$out} JSON::PP->new->canonical(1)->encode($json), "\n";
+        close $out;
+      }
+    '
+
+  if ! grep -q 'directory = "../@VENDORED_DIRECTORY@"' .cargo/config.in; then
+    echo "Could not rewrite vendored Cargo source path" >&2
+    return 1
+  fi
+
+  if ! grep -q "command' -v python3" mach; then
+    echo "mach was not patched to use python3" >&2
+    return 1
+  fi
+}
+
+build() {
+  cd "${srcdir}/Mypal68-${pkgver}"
+
+  export CC=cc
+  export CXX=c++
+  export AR=ar
+  local _windres="${MINGW_PREFIX}/bin/windres"
+  if [[ ${MINGW_PACKAGE_PREFIX} == mingw-w64-clang-* ]]; then
+    _windres="${MINGW_PREFIX}/bin/llvm-windres"
+  fi
+
+  export RC="${_windres}"
+  export RANLIB=ranlib
+  export WINDRES="${_windres}"
+  export NODEJS="${MINGW_PREFIX}/bin/node"
+  export CARGO_NET_GIT_FETCH_WITH_CLI=true
+  export PATH="/usr/bin:${MINGW_PREFIX}/bin:${PATH}"
+  export MOZCONFIG="${srcdir}/mypal68-ucrt64.mozconfig"
+  export D3DCOMPILER_DLL="/c/Windows/System32/d3dcompiler_47.dll"
+
+  if [[ ! -f "${D3DCOMPILER_DLL}" ]]; then
+    echo "Could not find d3dcompiler_47.dll at ${D3DCOMPILER_DLL}" >&2
+    return 1
+  fi
+  install -Dm644 "${D3DCOMPILER_DLL}" "${MINGW_PREFIX}/bin/d3dcompiler_47.dll"
+
+  cat > "${MOZCONFIG}" <<EOF
+ac_add_options --with-libclang-path=${MINGW_PREFIX}/bin
+ac_add_options --enable-nodejs
+EOF
+
+  ./mach configure
+  ./mach build
+}
+
+package() {
+  cd "${srcdir}/Mypal68-${pkgver}"
+
+  local objdir
+  objdir="$(find . -maxdepth 1 -type d -name 'obj-*' -print -quit)"
+  if [[ -z "${objdir}" || ! -d "${objdir}/dist/bin" ]]; then
+    echo "Could not find built dist/bin directory" >&2
+    return 1
+  fi
+
+  local appdir="${pkgdir}${MINGW_PREFIX}/lib/${_realname}"
+  install -d "${appdir}" "${pkgdir}${MINGW_PREFIX}/bin"
+  cp -a "${objdir}/dist/bin/." "${appdir}/"
+
+  cat > "${pkgdir}${MINGW_PREFIX}/bin/${_realname}" <<EOF
+#!/bin/sh
+exec "\$(dirname "\$0")/../lib/${_realname}/mypal.exe" "\$@"
+EOF
+  chmod 755 "${pkgdir}${MINGW_PREFIX}/bin/${_realname}"
+
+  cat > "${pkgdir}${MINGW_PREFIX}/bin/${_realname}.cmd" <<EOF
+@echo off
+"%~dp0..\lib\${_realname}\mypal.exe" %*
+EOF
+
+  install -Dm644 LICENSE "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+}

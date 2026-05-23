@@ -1,0 +1,546 @@
+diff --git a/.cargo/config.in b/.cargo/config.in
+index bdf8a4f..5c7d5c5 100644
+--- a/.cargo/config.in
++++ b/.cargo/config.in
+@@ -24,4 +24,4 @@ directory = "third_party/rust"
+ # cargo will ignore it when it's here verbatim.
+ #filter substitution
+ [source."@REPLACE_NAME@"]
+-directory = "@top_srcdir@/@VENDORED_DIRECTORY@"
++directory = "../@VENDORED_DIRECTORY@"
+diff --git a/build/cargo-host-linker.bat b/build/cargo-host-linker.bat
+index 80e6eab..2f05fb6 100644
+--- a/build/cargo-host-linker.bat
++++ b/build/cargo-host-linker.bat
+@@ -1,3 +1,8 @@
+ @echo off
+ REM See comment in cargo-linker (without extension)
+-%MOZ_CARGO_WRAP_HOST_LD% %MOZ_CARGO_WRAP_HOST_LDFLAGS% %*
++setlocal
++set "MOZ_CARGO_WRAP_HOST_LD_CMD=%MOZ_CARGO_WRAP_HOST_LD%"
++if "%MOZ_CARGO_WRAP_HOST_LD_CMD:~0,1%"=="/" (
++  for /f "usebackq delims=" %%i in (`cygpath -w "%MOZ_CARGO_WRAP_HOST_LD_CMD%"`) do set "MOZ_CARGO_WRAP_HOST_LD_CMD=%%i"
++)
++%MOZ_CARGO_WRAP_HOST_LD_CMD% %MOZ_CARGO_WRAP_HOST_LDFLAGS% %*
+diff --git a/build/cargo-linker.bat b/build/cargo-linker.bat
+index ccde26c..de0ff9e 100644
+--- a/build/cargo-linker.bat
++++ b/build/cargo-linker.bat
+@@ -1,3 +1,8 @@
+ @echo off
+ REM See comment in cargo-linker (without extension)
+-%MOZ_CARGO_WRAP_LD% %MOZ_CARGO_WRAP_LDFLAGS% %*
++setlocal
++set "MOZ_CARGO_WRAP_LD_CMD=%MOZ_CARGO_WRAP_LD%"
++if "%MOZ_CARGO_WRAP_LD_CMD:~0,1%"=="/" (
++  for /f "usebackq delims=" %%i in (`cygpath -w "%MOZ_CARGO_WRAP_LD_CMD%"`) do set "MOZ_CARGO_WRAP_LD_CMD=%%i"
++)
++%MOZ_CARGO_WRAP_LD_CMD% %MOZ_CARGO_WRAP_LDFLAGS% %*
+diff --git a/config/baseconfig.mk b/config/baseconfig.mk
+index d2d607e..5aea086 100644
+--- a/config/baseconfig.mk
++++ b/config/baseconfig.mk
+@@ -34,7 +34,7 @@ endif
+ 
+ ifdef INCLUDED_AUTOCONF_MK
+ ifeq (a,$(firstword a$(subst /, ,$(srcdir))))
+-$(error MSYS-style srcdir are not supported for Windows builds.)
++$(warning MSYS-style srcdir detected; proceeding anyway)
+ endif
+ endif
+ endif # WINNT
+diff --git a/config/makefiles/rust.mk b/config/makefiles/rust.mk
+index eeba8f6..50185c9 100644
+--- a/config/makefiles/rust.mk
++++ b/config/makefiles/rust.mk
+@@ -122,23 +122,23 @@ endif
+ # https://github.com/alexcrichton/cc-rs/blob/baa71c0e298d9ad7ac30f0ad78f20b4b3b3a8fb2/src/lib.rs#L1715
+ rust_host_cc_env_name := $(subst -,_,$(RUST_HOST_TARGET))
+ 
+-export CC_$(rust_host_cc_env_name)=$(HOST_CC)
+-export CXX_$(rust_host_cc_env_name)=$(HOST_CXX)
++export CC_$(rust_host_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(HOST_CC)),$(HOST_CC))
++export CXX_$(rust_host_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(HOST_CXX)),$(HOST_CXX))
+ # We don't have a HOST_AR. If rust needs one, assume it's going to pick an appropriate one.
+ 
+ rust_cc_env_name := $(subst -,_,$(RUST_TARGET))
+ 
+-export CC_$(rust_cc_env_name)=$(CC)
+-export CXX_$(rust_cc_env_name)=$(CXX)
+-export AR_$(rust_cc_env_name)=$(AR)
++export CC_$(rust_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(CC)),$(CC))
++export CXX_$(rust_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(CXX)),$(CXX))
++export AR_$(rust_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(AR)),$(AR))
+ ifeq (,$(NATIVE_SANITIZERS)$(MOZ_CODE_COVERAGE))
+ # -DMOZILLA_CONFIG_H is added to prevent mozilla-config.h from injecting anything
+ # in C/C++ compiles from rust. That's not needed in the other branch because the
+ # base flags don't force-include mozilla-config.h.
+-export CFLAGS_$(rust_host_cc_env_name)=$(COMPUTED_HOST_CFLAGS) -DMOZILLA_CONFIG_H
+-export CXXFLAGS_$(rust_host_cc_env_name)=$(COMPUTED_HOST_CXXFLAGS) -DMOZILLA_CONFIG_H
+-export CFLAGS_$(rust_cc_env_name)=$(COMPUTED_CFLAGS) -DMOZILLA_CONFIG_H
+-export CXXFLAGS_$(rust_cc_env_name)=$(COMPUTED_CXXFLAGS) -DMOZILLA_CONFIG_H
++export CFLAGS_$(rust_host_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(COMPUTED_HOST_CFLAGS)),$(COMPUTED_HOST_CFLAGS)) -DMOZILLA_CONFIG_H
++export CXXFLAGS_$(rust_host_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(COMPUTED_HOST_CXXFLAGS)),$(COMPUTED_HOST_CXXFLAGS)) -DMOZILLA_CONFIG_H
++export CFLAGS_$(rust_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(COMPUTED_CFLAGS)),$(COMPUTED_CFLAGS)) -DMOZILLA_CONFIG_H
++export CXXFLAGS_$(rust_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(COMPUTED_CXXFLAGS)),$(COMPUTED_CXXFLAGS)) -DMOZILLA_CONFIG_H
+ else
+ # Because cargo doesn't allow to distinguish builds happening for build
+ # scripts/procedural macros vs. those happening for the rust target,
+@@ -148,10 +148,10 @@ else
+ # This means C code built by rust is not going to be covered by sanitizer
+ # and coverage. But at least we control what compiler is being used,
+ # rather than relying on cc-rs guesses, which, sometimes fail us.
+-export CFLAGS_$(rust_host_cc_env_name)=$(HOST_CC_BASE_FLAGS)
+-export CXXFLAGS_$(rust_host_cc_env_name)=$(HOST_CXX_BASE_FLAGS)
+-export CFLAGS_$(rust_cc_env_name)=$(CC_BASE_FLAGS)
+-export CXXFLAGS_$(rust_cc_env_name)=$(CXX_BASE_FLAGS)
++export CFLAGS_$(rust_host_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(HOST_CC_BASE_FLAGS)),$(HOST_CC_BASE_FLAGS))
++export CXXFLAGS_$(rust_host_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(HOST_CXX_BASE_FLAGS)),$(HOST_CXX_BASE_FLAGS))
++export CFLAGS_$(rust_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(CC_BASE_FLAGS)),$(CC_BASE_FLAGS))
++export CXXFLAGS_$(rust_cc_env_name)=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_flags,$(CXX_BASE_FLAGS)),$(CXX_BASE_FLAGS))
+ endif
+ 
+ export CARGO_TARGET_DIR
+@@ -232,10 +232,13 @@ export MOZ_CARGO_WRAP_HOST_LD
+ # appropriately for all recipes.
+ ifeq (WINNT,$(HOST_OS_ARCH))
+ # Use .bat wrapping on Windows hosts, and shell wrapping on other hosts.
++windows_path = $(shell cygpath -w '$(1)')
++windows_cmd = $(call windows_path,$(firstword $(1))) $(wordlist 2,$(words $(1)),$(1))
++windows_flags = $(strip $(shell for arg in $(1); do if [ "$${arg#-I/}" != "$$arg" ]; then winpath=`cygpath -w "/$${arg#-I/}"`; printf '%s ' "-I$$winpath"; elif [ "$${arg#-L/}" != "$$arg" ]; then winpath=`cygpath -w "/$${arg#-L/}"`; printf '%s ' "-L$$winpath"; elif [ "$${arg#/}" != "$$arg" ]; then cygpath -w "$$arg" | tr '\n' ' '; else printf '%s ' "$$arg"; fi; done))
+ # Like for CC/C*FLAGS, we want the target values to trump the host values when
+ # both variables are the same.
+-export $(cargo_host_linker_env_var):=$(topsrcdir)/build/cargo-host-linker.bat
+-export $(cargo_linker_env_var):=$(topsrcdir)/build/cargo-linker.bat
++export $(cargo_host_linker_env_var):=$(call windows_path,$(topsrcdir)/build/cargo-host-linker.bat)
++export $(cargo_linker_env_var):=$(call windows_path,$(topsrcdir)/build/cargo-linker.bat)
+ WRAP_HOST_LINKER_LIBPATHS:=$(HOST_LINKER_LIBPATHS_BAT)
+ else
+ export $(cargo_host_linker_env_var):=$(topsrcdir)/build/cargo-host-linker
+@@ -248,17 +251,17 @@ $(HOST_RECIPES): MOZ_CARGO_WRAP_LDFLAGS:=$(HOST_LDFLAGS) $(WRAP_HOST_LINKER_LIBP
+ $(TARGET_RECIPES) $(HOST_RECIPES): MOZ_CARGO_WRAP_HOST_LDFLAGS:=$(HOST_LDFLAGS) $(WRAP_HOST_LINKER_LIBPATHS)
+ 
+ ifeq (,$(filter clang-cl,$(CC_TYPE)))
+-$(TARGET_RECIPES): MOZ_CARGO_WRAP_LD:=$(CC)
++$(TARGET_RECIPES): MOZ_CARGO_WRAP_LD:=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(CC)),$(CC))
+ else
+-$(TARGET_RECIPES): MOZ_CARGO_WRAP_LD:=$(LINKER)
++$(TARGET_RECIPES): MOZ_CARGO_WRAP_LD:=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(LINKER)),$(LINKER))
+ endif
+ 
+ ifeq (,$(filter clang-cl,$(HOST_CC_TYPE)))
+-$(HOST_RECIPES): MOZ_CARGO_WRAP_LD:=$(HOST_CC)
+-$(TARGET_RECIPES) $(HOST_RECIPES): MOZ_CARGO_WRAP_HOST_LD:=$(HOST_CC)
++$(HOST_RECIPES): MOZ_CARGO_WRAP_LD:=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(HOST_CC)),$(HOST_CC))
++$(TARGET_RECIPES) $(HOST_RECIPES): MOZ_CARGO_WRAP_HOST_LD:=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(HOST_CC)),$(HOST_CC))
+ else
+-$(HOST_RECIPES): MOZ_CARGO_WRAP_LD:=$(HOST_LINKER)
+-$(TARGET_RECIPES) $(HOST_RECIPES): MOZ_CARGO_WRAP_HOST_LD:=$(HOST_LINKER)
++$(HOST_RECIPES): MOZ_CARGO_WRAP_LD:=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(HOST_LINKER)),$(HOST_LINKER))
++$(TARGET_RECIPES) $(HOST_RECIPES): MOZ_CARGO_WRAP_HOST_LD:=$(if $(filter WINNT,$(HOST_OS_ARCH)),$(call windows_cmd,$(HOST_LINKER)),$(HOST_LINKER))
+ endif
+ 
+ endif # NATIVE_SANITIZERS
+diff --git a/config/makefiles/xpidl/Makefile.in b/config/makefiles/xpidl/Makefile.in
+index 17a79fd..a880fa5 100644
+--- a/config/makefiles/xpidl/Makefile.in
++++ b/config/makefiles/xpidl/Makefile.in
+@@ -41,12 +41,20 @@ code_gen_deps := $(topsrcdir)/xpcom/ds/tools/perfecthash.py
+ # in the virtualenv.
+ %.xpt:
+ 	$(REPORT_BUILD)
++	$(file >$@.rsp,--cache-dir)
++	$(file >>$@.rsp,$(DEPTH)/xpcom/idl-parser/xpidl)
++	$(file >>$@.rsp,--depsdir)
++	$(file >>$@.rsp,$(idl_deps_dir))
++	$(file >>$@.rsp,--bindings-conf)
++	$(file >>$@.rsp,$(topsrcdir)/dom/bindings/Bindings.conf)
++	$(foreach dir,$(all_idl_dirs),$(file >>$@.rsp,-I)$(file >>$@.rsp,$(dir)))
++	$(file >>$@.rsp,$(dist_include_dir))
++	$(file >>$@.rsp,$(dist_xpcrs_dir))
++	$(file >>$@.rsp,$(@D))
++	$(file >>$@.rsp,$(basename $(notdir $@)))
++	$(foreach idl,$($(basename $(notdir $@))_deps),$(file >>$@.rsp,$(idl)))
+ 	$(PYTHON_PATH) $(PLY_INCLUDE) -I$(topsrcdir)/xpcom/idl-parser -I$(DEPTH)/xpcom/idl-parser/xpidl \
+-		$(process_py) --cache-dir $(DEPTH)/xpcom/idl-parser/xpidl --depsdir $(idl_deps_dir) \
+-		--bindings-conf $(topsrcdir)/dom/bindings/Bindings.conf \
+-		$(foreach dir,$(all_idl_dirs),-I $(dir)) \
+-		$(dist_include_dir) $(dist_xpcrs_dir) $(@D) \
+-		$(basename $(notdir $@)) $($(basename $(notdir $@))_deps)
++		$(process_py) @$@.rsp
+ # When some IDL is added or removed, if the actual IDL file was already, or
+ # still is, in the tree, simple dependencies can't detect that the XPT needs
+ # to be rebuilt.
+diff --git a/gfx/layers/d3d11/genshaders.py b/gfx/layers/d3d11/genshaders.py
+index cec9639..d7963c7 100644
+--- a/gfx/layers/d3d11/genshaders.py
++++ b/gfx/layers/d3d11/genshaders.py
+@@ -77,13 +77,22 @@ def run_fxc(shader_model,
+             shader_file,
+             shader_name,
+             output_fp):
++    def windows_path(path):
++        if not path.startswith('/'):
++            return path
++        converted = subprocess.check_output(['cygpath', '-w', path])
++        return converted.decode('utf-8').strip()
++
+     fxc_location = buildconfig.substs['FXC']
++    fxc_shader_file = shader_file
++    if 'WINNT' in buildconfig.substs['OS_ARCH']:
++        fxc_shader_file = windows_path(shader_file)
+ 
+     argv = [
+         fxc_location,
+         '-nologo',
+         '-T{0}'.format(shader_model),
+-        shader_file,
++        fxc_shader_file,
+         '-E{0}'.format(shader_name),
+         '-Vn{0}'.format(shader_name),
+         '-Vi',
+@@ -97,7 +106,10 @@ def run_fxc(shader_model,
+ 
+     deps = None
+     with ScopedTempFilename() as temp_filename:
+-        argv += ['-Fh{0}'.format(temp_filename)]
++        fxc_temp_filename = temp_filename
++        if 'WINNT' in buildconfig.substs['OS_ARCH']:
++            fxc_temp_filename = windows_path(temp_filename)
++        argv += ['-Fh{0}'.format(fxc_temp_filename)]
+ 
+         sys.stdout.write('{0}\n'.format(' '.join(argv)))
+         proc_stdout = subprocess.check_output(argv)
+diff --git a/ipc/app/moz.build b/ipc/app/moz.build
+index cc00dfb..532f676 100644
+--- a/ipc/app/moz.build
++++ b/ipc/app/moz.build
+@@ -21,11 +21,13 @@ LOCAL_INCLUDES += [
+     '/xpcom/base',
+ ]
+ 
+-# DELAYLOAD_DLLS in this block ensures that the DLL blocklist is functional
+ if CONFIG['OS_ARCH'] == 'WINNT':
+-    DELAYLOAD_DLLS += [
+-        'nss3.dll',
+-    ]
++    # DELAYLOAD_DLLS keeps the DLL blocklist functional. Only emit the flags
++    # for MSVC-style toolchains; GNU ld doesn't understand /DELAYLOAD.
++    if CONFIG['CC_TYPE'] in ('msvc', 'clang-cl'):
++        DELAYLOAD_DLLS += [
++            'nss3.dll',
++        ]
+ 
+     if CONFIG['MOZ_SANDBOX']:
+         # For sandbox includes and the include dependencies those have
+@@ -38,15 +40,17 @@ if CONFIG['OS_ARCH'] == 'WINNT':
+             'sandbox_s',
+         ]
+ 
++        if CONFIG['CC_TYPE'] in ('msvc', 'clang-cl'):
++            DELAYLOAD_DLLS += [
++                'winmm.dll',
++                'user32.dll',
++            ]
++
++    if CONFIG['CC_TYPE'] in ('msvc', 'clang-cl'):
+         DELAYLOAD_DLLS += [
+-            'winmm.dll',
+-            'user32.dll',
++            'xul.dll',
+         ]
+ 
+-    DELAYLOAD_DLLS += [
+-        'xul.dll',
+-    ]
+-
+ if CONFIG['MOZ_SANDBOX'] and CONFIG['OS_TARGET'] == 'Darwin':
+     # For sandbox includes and the include dependencies those have
+     LOCAL_INCLUDES += [
+diff --git a/js/src/builtin/embedjs.py b/js/src/builtin/embedjs.py
+index 83967af..d7b5cff 100644
+--- a/js/src/builtin/embedjs.py
++++ b/js/src/builtin/embedjs.py
+@@ -100,7 +100,8 @@ def embed(
+     combinedSources = "\n".join(
+         [msgs]
+         + [
+-            '#include "%(s)s"' % {'s': mozpath.realpath(source)}
++            '#include "%(s)s"' %
++            {'s': mozpath.relpath(mozpath.realpath(source), objdir)}
+             for source in sources
+         ]
+     )
+diff --git a/media/ffvpx/config_mingw64.h b/media/ffvpx/config_mingw64.h
+index 0f520ae..627e581 100644
+--- a/media/ffvpx/config_mingw64.h
++++ b/media/ffvpx/config_mingw64.h
+@@ -193,7 +193,7 @@
+ #define HAVE_SYNC_VAL_COMPARE_AND_SWAP 1
+ #define HAVE_CABS 1
+ #define HAVE_CEXP 1
+-#define HAVE_INLINE_ASM 1
++#define HAVE_INLINE_ASM 0
+ #define HAVE_SYMVER 1
+ #define HAVE_X86ASM 1
+ #define HAVE_BIGENDIAN 0
+@@ -341,9 +341,9 @@
+ #define HAVE_GNU_AS 0
+ #define HAVE_GNU_WINDRES 1
+ #define HAVE_IBM_ASM 0
+-#define HAVE_INLINE_ASM_DIRECT_SYMBOL_REFS 1
+-#define HAVE_INLINE_ASM_LABELS 1
+-#define HAVE_INLINE_ASM_NONLOCAL_LABELS 1
++#define HAVE_INLINE_ASM_DIRECT_SYMBOL_REFS 0
++#define HAVE_INLINE_ASM_LABELS 0
++#define HAVE_INLINE_ASM_NONLOCAL_LABELS 0
+ #define HAVE_PRAGMA_DEPRECATED 1
+ #define HAVE_RSYNC_CONTIMEOUT 0
+ #define HAVE_SYMVER_ASM_LABEL 1
+diff --git a/mozglue/baseprofiler/public/ProfileBufferEntrySerialization.h b/mozglue/baseprofiler/public/ProfileBufferEntrySerialization.h
+index ed65fa8..6a1368d 100644
+--- a/mozglue/baseprofiler/public/ProfileBufferEntrySerialization.h
++++ b/mozglue/baseprofiler/public/ProfileBufferEntrySerialization.h
+@@ -822,7 +822,7 @@ struct ProfileBufferEntryReader::Deserializer<std::basic_string<CHAR>> {
+ // *bytes* (encoded as ULEB128) and all the characters in the string. The
+ // null terminator is omitted.
+ // `CHAR` can be any type that has a specialization for
+-// `std::char_traits<CHAR>::length(const CHAR*)`.
++// `std::char_traits<std::remove_const_t<CHAR>>::length(const CHAR*)`.
+ //
+ // Note: A nullptr pointer will be serialized like an empty string, so when
+ // deserializing it will result in an allocated buffer only containing a
+@@ -835,7 +835,7 @@ struct ProfileBufferEntryWriter::Serializer<UniqueFreePtr<CHAR>> {
+       return ULEB128Size(0u);
+     }
+     // Note that we store the size in *bytes*, not in number of characters.
+-    const auto bytes = std::char_traits<CHAR>::length(aS.get()) * sizeof(CHAR);
++    const auto bytes = std::char_traits<std::remove_const_t<CHAR>>::length(aS.get()) * sizeof(CHAR);
+     return ULEB128Size(bytes) + bytes;
+   }
+ 
+@@ -848,7 +848,7 @@ struct ProfileBufferEntryWriter::Serializer<UniqueFreePtr<CHAR>> {
+       return;
+     }
+     // Note that we store the size in *bytes*, not in number of characters.
+-    const auto bytes = std::char_traits<CHAR>::length(aS.get()) * sizeof(CHAR);
++    const auto bytes = std::char_traits<std::remove_const_t<CHAR>>::length(aS.get()) * sizeof(CHAR);
+     aEW.WriteULEB128(bytes);
+     aEW.WriteBytes(aS.get(), bytes);
+   }
+diff --git a/other-licenses/snappy/src/snappy.h b/other-licenses/snappy/src/snappy.h
+index d2d2a7d..4568db8 100644
+--- a/other-licenses/snappy/src/snappy.h
++++ b/other-licenses/snappy/src/snappy.h
+@@ -42,7 +42,7 @@
+ #include <stddef.h>
+ #include <string>
+ 
+-#include "../snappy-stubs-public.h"
++#include "snappy-stubs-public.h"
+ 
+ namespace snappy {
+   class Source;
+diff --git a/python/mozbuild/mozbuild/action/xpidl-process.py b/python/mozbuild/mozbuild/action/xpidl-process.py
+index d1b8af5..d1dc777 100644
+--- a/python/mozbuild/mozbuild/action/xpidl-process.py
++++ b/python/mozbuild/mozbuild/action/xpidl-process.py
+@@ -96,7 +96,7 @@ def process(input_dirs, inc_paths, bindings_conf, cache_dir, header_dir,
+ 
+ 
+ def main(argv):
+-    parser = argparse.ArgumentParser()
++    parser = argparse.ArgumentParser(fromfile_prefix_chars='@')
+     parser.add_argument('--cache-dir',
+                         help='Directory in which to find or write cached lexer data.')
+     parser.add_argument('--depsdir',
+diff --git a/python/mozbuild/mozbuild/backend/common.py b/python/mozbuild/mozbuild/backend/common.py
+index 96659d3..7598942 100644
+--- a/python/mozbuild/mozbuild/backend/common.py
++++ b/python/mozbuild/mozbuild/backend/common.py
+@@ -409,6 +409,11 @@ class CommonBackend(BuildBackend):
+     def _write_unified_file(
+         self, unified_file, source_filenames, output_directory, poison_windows_h=False
+     ):
++        def unified_include_path(source):
++            if os.path.isabs(source):
++                return mozpath.relpath(source, output_directory)
++            return source
++
+         with self._write_file(mozpath.join(output_directory, unified_file)) as f:
+             f.write("#define MOZ_UNIFIED_BUILD\n")
+             includeTemplate = '#include "%(cppfile)s"'
+@@ -434,7 +439,10 @@ class CommonBackend(BuildBackend):
+                 "#endif"
+             )
+             f.write(
+-                "\n".join(includeTemplate % {"cppfile": s} for s in source_filenames)
++                "\n".join(
++                    includeTemplate % {"cppfile": unified_include_path(s)}
++                    for s in source_filenames
++                )
+             )
+ 
+     def _write_unified_files(
+diff --git a/servo/components/style/build.rs b/servo/components/style/build.rs
+index 415d2b8..24fa828 100644
+--- a/servo/components/style/build.rs
++++ b/servo/components/style/build.rs
+@@ -6,7 +6,6 @@
+ extern crate lazy_static;
+ 
+ use std::env;
+-use std::path::Path;
+ use std::process::{exit, Command};
+ use walkdir::WalkDir;
+ 
+@@ -21,9 +20,9 @@ mod build_gecko {
+ lazy_static! {
+     pub static ref PYTHON: String = env::var("PYTHON").ok().unwrap_or_else(|| {
+         let candidates = if cfg!(windows) {
+-            ["python2.7.exe", "python27.exe", "python.exe"]
++            ["python3.exe", "python.exe"]
+         } else {
+-            ["python2.7", "python2", "python"]
++            ["python3", "python"]
+         };
+         for &name in &candidates {
+             if Command::new(name)
+@@ -53,10 +52,7 @@ fn generate_properties(engine: &str) {
+         }
+     }
+ 
+-    let script = Path::new(&env::var_os("CARGO_MANIFEST_DIR").unwrap())
+-        .join("properties")
+-        .join("build.py");
+-    let script_str = script.to_str().unwrap().replace("\\", "/");
++    let script_str = "properties/build.py";
+ 
+     let status = Command::new(&*PYTHON)
+         .arg(&script_str)
+diff --git a/servo/components/style/build_gecko.rs b/servo/components/style/build_gecko.rs
+index 5a638bc..bcc8b27 100644
+--- a/servo/components/style/build_gecko.rs
++++ b/servo/components/style/build_gecko.rs
+@@ -399,9 +399,10 @@ fn generate_atoms() {
+     let script = PathBuf::from(env::var_os("CARGO_MANIFEST_DIR").unwrap())
+         .join("gecko")
+         .join("regen_atoms.py");
++    let script_arg = "gecko/regen_atoms.py";
+     println!("cargo:rerun-if-changed={}", script.display());
+     let status = Command::new(&*PYTHON)
+-        .arg(&script)
++        .arg(script_arg)
+         .arg(DISTDIR_PATH.as_os_str())
+         .arg(OUTDIR_PATH.as_os_str())
+         .status()
+diff --git a/servo/components/style/properties/build.py b/servo/components/style/properties/build.py
+index 5367485..99e6b2f 100644
+--- a/servo/components/style/properties/build.py
++++ b/servo/components/style/properties/build.py
+@@ -4,6 +4,7 @@
+ 
+ import json
+ import os.path
++import shutil
+ import re
+ import sys
+ 
+@@ -84,6 +85,12 @@ def main():
+     )
+     if output == "style-crate":
+         write(OUT_DIR, "properties.rs", files["properties"])
++        for filename in [
++            "declaration_block.rs",
++            "cascade.rs",
++        ]:
++            shutil.copyfile(os.path.join(BASE, filename), os.path.join(OUT_DIR, filename))
++
+         for kind in ["longhands", "shorthands"]:
+             for struct in files[kind]:
+                 write(
+diff --git a/servo/components/style/properties/properties.mako.rs b/servo/components/style/properties/properties.mako.rs
+index a0613eb..817bc46 100644
+--- a/servo/components/style/properties/properties.mako.rs
++++ b/servo/components/style/properties/properties.mako.rs
+@@ -58,9 +58,9 @@ pub use self::cascade::*;
+     import os.path
+ %>
+ 
+-#[path="${repr(os.path.join(os.path.dirname(__file__), 'declaration_block.rs'))[1:-1]}"]
++#[path="declaration_block.rs"]
+ pub mod declaration_block;
+-#[path="${repr(os.path.join(os.path.dirname(__file__), 'cascade.rs'))[1:-1]}"]
++#[path="cascade.rs"]
+ pub mod cascade;
+ 
+ /// Conversion with fewer impls than From/Into
+diff --git a/testing/mozbase/mozinfo/mozinfo/mozinfo.py b/testing/mozbase/mozinfo/mozinfo/mozinfo.py
+index 6890187..707003a 100644
+--- a/testing/mozbase/mozinfo/mozinfo/mozinfo.py
++++ b/testing/mozbase/mozinfo/mozinfo/mozinfo.py
+@@ -97,7 +97,11 @@ if system in ["Microsoft", "Windows"]:
+ elif system.startswith(('MINGW', 'MSYS_NT')):
+     # windows/mingw python build (msys)
+     info['os'] = 'win'
+-    os_version = version = unknown
++    match = re.search(r'-(\d+)\.(\d+)-(\d+)', system)
++    if match:
++        major, minor, build_number = match.groups()
++        os_version = "%s.%s" % (major, minor)
++        version = "%s.%s.%s" % (major, minor, build_number)
+ elif system == "Linux":
+     # Attempt to use distro package to determine Linux distribution first.
+     # Failing that, fall back to use the platform method.
+diff --git a/toolkit/crashreporter/google-breakpad/src/processor/moz.build b/toolkit/crashreporter/google-breakpad/src/processor/moz.build
+index b3e308c..ff3fdbf 100644
+--- a/toolkit/crashreporter/google-breakpad/src/processor/moz.build
++++ b/toolkit/crashreporter/google-breakpad/src/processor/moz.build
+@@ -30,6 +30,7 @@ UNIFIED_SOURCES += [
+     'dump_object.cc',
+     'exploitability.cc',
+     'exploitability_linux.cc',
++    'fast_source_line_resolver.cc',
+     'logging.cc',
+     'minidump.cc',
+     'minidump_processor.cc',
+diff --git a/toolkit/moz.configure b/toolkit/moz.configure
+index e67bdd6..33d98da 100644
+--- a/toolkit/moz.configure
++++ b/toolkit/moz.configure
+@@ -1628,10 +1628,13 @@ with only_when(compile_environment & target_is_windows):
+             return 'provided by the OS'
+         return value.path
+ 
+-    @depends(target, valid_windows_sdk_dir, fxc)
++    option(env='D3DCOMPILER_DLL', nargs=1,
++           help='Path to d3dcompiler_47.dll')
++
++    @depends(target, valid_windows_sdk_dir, fxc, 'D3DCOMPILER_DLL')
+     @checking('for D3D compiler DLL', d3d_compiler_dll_result)
+     @imports('os.path')
+-    def d3d_compiler_dll(target, windows_sdk_dir, fxc):
++    def d3d_compiler_dll(target, windows_sdk_dir, fxc, d3dcompiler_dll):
+         cpu = '%s' % target.cpu
+         suffix = {
+             'x86_64': 'x64',
+@@ -1643,7 +1646,10 @@ with only_when(compile_environment & target_is_windows):
+             # AArch64 Windows comes with d3dcompiler_47.dll installed
+             return namespace(name=name, path=None)
+ 
+-        if windows_sdk_dir:
++        if d3dcompiler_dll:
++            path = d3dcompiler_dll[0]
++            error_extra = 'from D3DCOMPILER_DLL'
++        elif windows_sdk_dir:
+             path = os.path.join(windows_sdk_dir.path, 'Redist', 'D3D', suffix, name)
+             error_extra = 'in Windows SDK at {}'.format(windows_sdk_dir.path)
+         else:
+diff --git a/widget/gtk/mozcontainer.cpp b/widget/gtk/MozContainer.cpp
+similarity index 100%
+rename from widget/gtk/mozcontainer.cpp
+rename to widget/gtk/MozContainer.cpp
+diff --git a/widget/gtk/mozcontainer.h b/widget/gtk/MozContainer.h
+similarity index 100%
+rename from widget/gtk/mozcontainer.h
+rename to widget/gtk/MozContainer.h

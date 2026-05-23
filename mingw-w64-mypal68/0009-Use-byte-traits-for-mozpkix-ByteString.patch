@@ -1,0 +1,51 @@
+--- a/security/nss/lib/mozpkix/include/pkix-test/pkixtestutil.h
++++ b/security/nss/lib/mozpkix/include/pkix-test/pkixtestutil.h
+@@ -34,7 +34,47 @@
+ namespace pkix {
+ namespace test {
+ 
+-typedef std::basic_string<uint8_t> ByteString;
++struct ByteStringCharTraits {
++  typedef uint8_t char_type;
++  typedef unsigned int int_type;
++  typedef std::streamoff off_type;
++  typedef std::streampos pos_type;
++  typedef std::mbstate_t state_type;
++
++  static void assign(char_type& aR, const char_type& aA) { aR = aA; }
++  static char_type* assign(char_type* aS, size_t aN, char_type aA) {
++    return static_cast<char_type*>(std::memset(aS, aA, aN));
++  }
++  static bool eq(char_type aA, char_type aB) { return aA == aB; }
++  static bool lt(char_type aA, char_type aB) { return aA < aB; }
++  static int compare(const char_type* aS1, const char_type* aS2, size_t aN) {
++    return std::memcmp(aS1, aS2, aN);
++  }
++  static size_t length(const char_type* aS) {
++    const char_type* p = aS;
++    while (*p) {
++      ++p;
++    }
++    return p - aS;
++  }
++  static const char_type* find(const char_type* aS, size_t aN,
++                               const char_type& aA) {
++    return static_cast<const char_type*>(std::memchr(aS, aA, aN));
++  }
++  static char_type* move(char_type* aS1, const char_type* aS2, size_t aN) {
++    return static_cast<char_type*>(std::memmove(aS1, aS2, aN));
++  }
++  static char_type* copy(char_type* aS1, const char_type* aS2, size_t aN) {
++    return static_cast<char_type*>(std::memcpy(aS1, aS2, aN));
++  }
++  static int_type not_eof(int_type aC) { return eq_int_type(aC, eof()) ? 0 : aC; }
++  static char_type to_char_type(int_type aC) { return static_cast<char_type>(aC); }
++  static int_type to_int_type(char_type aC) { return static_cast<int_type>(aC); }
++  static bool eq_int_type(int_type aC1, int_type aC2) { return aC1 == aC2; }
++  static int_type eof() { return static_cast<int_type>(-1); }
++};
++
++typedef std::basic_string<uint8_t, ByteStringCharTraits> ByteString;
+ 
+ inline bool ENCODING_FAILED(const ByteString& bs) { return bs.empty(); }
+ 

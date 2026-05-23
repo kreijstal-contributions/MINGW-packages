@@ -1,0 +1,22 @@
+--- a/build/moz.configure/rust.configure
++++ b/build/moz.configure/rust.configure
+@@ -163,6 +163,8 @@
+                 retry = t[:-len('windows-msvc')] + 'mingw32'
+             elif t.endswith('-windows-gnu'):
+                 retry = t[:-len('windows-gnu')] + 'mingw32'
++            elif t.endswith('-windows-gnullvm'):
++                retry = t[:-len('windows-gnullvm')] + 'mingw32'
+             else:
+                 continue
+             try:
+@@ -216,7 +218,9 @@
+             # narrow further down using extra information from the build system.
+             # - For windows targets, correlate with the C compiler type
+             if host_or_target.kernel == 'WINNT':
+-                if compiler_info.type in ('gcc', 'clang'):
++                if compiler_info.type == 'clang':
++                    suffix = 'windows-gnullvm'
++                elif compiler_info.type == 'gcc':
+                     suffix = 'windows-gnu'
+                 else:
+                     suffix = 'windows-msvc'

@@ -1,0 +1,13 @@
+--- a/extensions/spellcheck/hunspell/glue/hunspell_fopen_hooks.h
++++ b/extensions/spellcheck/hunspell/glue/hunspell_fopen_hooks.h
+@@ -15,6 +15,10 @@
+ #include <stdio.h>
+ #include <string.h>
+ 
++#ifdef __cplusplus
++#  include <fstream>
++#endif
++
+ #if defined(XP_WIN)
+ #  include "nsNativeCharsetUtils.h"
+ #  include "nsString.h"
