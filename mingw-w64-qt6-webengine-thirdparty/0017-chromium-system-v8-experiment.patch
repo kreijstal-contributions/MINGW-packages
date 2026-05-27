@@ -1,0 +1,528 @@
+--- a/src/3rdparty/chromium/v8/BUILD.gn
++++ b/src/3rdparty/chromium/v8/BUILD.gn
+@@ -3,6 +3,7 @@
+ # found in the LICENSE file.
+
+ import("//build/config/android/config.gni")
++import("//build/config/linux/pkg_config.gni")
+ import("//build/config/arm.gni")
+ import("//build/config/coverage/coverage.gni")
+ import("//build/config/dcheck_always_on.gni")
+@@ -32,6 +33,8 @@
+
+   # Dynamically set an additional dependency from v8/custom_deps.
+   v8_custom_deps = ""
++  # Experimental MinGW packaging hook for using the system V8 package.
++  use_system_v8 = false
+
+   # Sets -DV8_ENABLE_FUTURE.
+   v8_enable_future = false
+@@ -490,6 +493,19 @@
+ if (cppgc_enable_verify_heap == "") {
+   cppgc_enable_verify_heap = v8_enable_debugging_features || v8_dcheck_always_on
+ }
++if (use_system_v8) {
++  pkg_config("system_v8") {
++    packages = [
++      "v8",
++      "v8_libbase",
++      "v8_libplatform",
++    ]
++  }
++  config("system_v8_generated_inspector") {
++    include_dirs = [ "$root_gen_dir/v8/include" ]
++  }
++}
++
+ if (v8_enable_verify_heap == "") {
+   v8_enable_verify_heap = v8_enable_debugging_features
+ }
+@@ -913,8 +929,11 @@ config("headers_config") {
+   configs = [
+     ":v8_header_features",
+     ":cppgc_header_features",
+   ]
+   include_dirs = [ "include" ]
++  if (use_system_v8) {
++    include_dirs += [ "$root_gen_dir/v8/include" ]
++  }
+ }
+
+ # This config should only be applied to code using V8 and not any V8 code
+@@ -3119,6 +3138,9 @@
+
+   deps = []
+
++  if (use_system_v8) {
++    sources = []
++  }
+   if (v8_generate_external_defines_header) {
+     sources += [ "$target_gen_dir/include/v8-gn.h" ]
+     deps += [ ":gen_v8_gn" ]
+@@ -3129,7 +3151,11 @@
+ # can depend upon to get basic v8 types.
+ v8_header_set("v8_headers") {
+   configs = [ ":internal_config" ]
+-  public_configs = [ ":headers_config" ]
++  if (use_system_v8) {
++    public_configs = [ ":system_v8", ":system_v8_generated_inspector" ]
++  } else {
++    public_configs = [ ":headers_config" ]
++  }
+
+   sources = [
+     "include/v8-array-buffer.h",
+@@ -3194,6 +3220,13 @@
+     "include/v8-wasm-trap-handler-win.h",
+   ]
+
++  if (use_system_v8) {
++    sources = []
++  }
++
+   public_deps = [ ":v8_config_headers" ]
++  if (use_system_v8) {
++    public_deps += [ "src/inspector:protocol_generated_sources" ]
++  }
+
+   deps = [
+@@ -7279,6 +7312,7 @@ v8_source_set("cppgc_base") {
+   public_deps = [
+     ":cppgc_headers",
++    ":v8_abseil",
+     ":v8_heap_base",
+     ":v8_libbase",
+     ":v8_libplatform",
+   ]
+@@ -7586,14 +7620,19 @@ if (is_component_build) {
+   v8_component("v8") {
+-    sources = [ "src/utils/v8dll-main.cc" ]
++    if (use_system_v8) {
++      sources = []
++      public_configs = [ ":system_v8" ]
++    } else {
++      sources = [ "src/utils/v8dll-main.cc" ]
+
+-    public_deps = [
+-      ":v8_base",
+-      ":v8_snapshot",
+-    ]
++      public_deps = [
++        ":v8_base",
++        ":v8_snapshot",
++      ]
+
+-    configs = [ ":internal_config" ]
++      configs = [ ":internal_config" ]
+
+-    public_configs = [ ":external_config" ]
++      public_configs = [ ":external_config" ]
++    }
+   }
+
+   v8_component("v8_for_testing") {
+@@ -7652,12 +7691,16 @@
+   }
+ } else {
+   group("v8") {
+-    public_deps = [
+-      ":v8_base",
+-      ":v8_snapshot",
+-    ]
++    if (use_system_v8) {
++      public_configs = [ ":system_v8" ]
++    } else {
++      public_deps = [
++        ":v8_base",
++        ":v8_snapshot",
++      ]
+
+-    public_configs = [ ":external_config" ]
++      public_configs = [ ":external_config" ]
++    }
+   }
+
+   group("v8_for_testing") {
+--- a/src/3rdparty/chromium/v8/BUILD.gn
++++ b/src/3rdparty/chromium/v8/BUILD.gn
+@@ -2891,4 +2891,14 @@ v8_source_set("v8_snapshot") {
+
+     sources += [ "$target_gen_dir/snapshot.cc" ]
+   }
++
++  if (use_system_v8) {
++    sources = []
++    jumbo_excluded_sources = []
++    deps = []
++    public_deps = []
++    allow_circular_includes_from = []
++    configs = []
++    public_configs = [ ":system_v8" ]
++  }
+ }
+@@ -3086,0 +3097,10 @@
++
++  if (use_system_v8) {
++    sources = []
++    jumbo_excluded_sources = []
++    deps = []
++    public_deps = []
++    allow_circular_includes_from = []
++    configs = []
++    public_configs = [ ":system_v8" ]
++  }
+@@ -5299,5 +5319,14 @@ v8_source_set("v8_compiler") {
+     ":v8_shared_internal_headers",
+   ]
+
++  if (use_system_v8) {
++    sources = []
++    jumbo_excluded_sources = []
++    deps = []
++    public_deps = []
++    configs = []
++    public_configs = [ ":system_v8" ]
++  }
++
+   configs = [ ":internal_config" ]
+ }
+@@ -6361,4 +6390,13 @@
+     ]
+     deps += [ "third_party/vtune:v8_vtune_trace_mark" ]
+   }
++  if (use_system_v8) {
++    sources = []
++    jumbo_excluded_sources = []
++    deps = []
++    public_deps = []
++    configs = []
++    public_configs = []
++    public_configs = [ ":system_v8" ]
++  }
+ }
+@@ -6374,0 +6413,4 @@
++  if (use_system_v8) {
++    public_deps = []
++    public_configs = [ ":system_v8" ]
++  }
+@@ -6891,0 +6934,9 @@
++
++  if (use_system_v8) {
++    sources = []
++    deps = []
++    public_deps = []
++    libs = []
++    configs = []
++    public_configs = [ ":system_v8" ]
++  }
+@@ -6940,0 +6992,6 @@
++
++  if (use_system_v8) {
++    sources = []
++    configs = []
++    public_configs = [ ":system_v8" ]
++  }
+@@ -7639 +7696,5 @@
+-    sources = [ "src/utils/v8dll-main.cc" ]
++    if (use_system_v8) {
++      sources = []
++      public_configs = [ ":system_v8" ]
++    } else {
++      sources = [ "src/utils/v8dll-main.cc" ]
+@@ -7641,7 +7702,7 @@
+-    public_deps = [
+-      ":torque_base",
+-      ":torque_ls_base",
+-      ":v8_base",
+-      ":v8_headers",
+-      ":v8_snapshot",
+-    ]
++      public_deps = [
++        ":torque_base",
++        ":torque_ls_base",
++        ":v8_base",
++        ":v8_headers",
++        ":v8_snapshot",
++      ]
+@@ -7649,4 +7710,4 @@
+-    if (v8_enable_turbofan) {
+-      # For cctest/test-serialize.
+-      public_deps += [ ":v8_initializers" ]
+-    }
++      if (v8_enable_turbofan) {
++        # For cctest/test-serialize.
++        public_deps += [ ":v8_initializers" ]
++      }
+@@ -7654 +7715 @@
+-    configs = [ ":internal_config" ]
++      configs = [ ":internal_config" ]
+@@ -7656 +7717,2 @@
+-    public_configs = [ ":external_config" ]
++      public_configs = [ ":external_config" ]
++    }
+@@ -7706,6 +7768,9 @@
+-    public_deps = [
+-      ":torque_base",
+-      ":torque_ls_base",
+-      ":v8_base",
+-      ":v8_snapshot",
+-    ]
++    if (use_system_v8) {
++      public_configs = [ ":system_v8" ]
++    } else {
++      public_deps = [
++        ":torque_base",
++        ":torque_ls_base",
++        ":v8_base",
++        ":v8_snapshot",
++      ]
+@@ -7713,4 +7778,4 @@
+-    if (v8_enable_turbofan) {
+-      # For cctest/test-serialize.
+-      public_deps += [ ":v8_initializers" ]
+-    }
++      if (v8_enable_turbofan) {
++        # For cctest/test-serialize.
++        public_deps += [ ":v8_initializers" ]
++      }
+@@ -7718 +7783,2 @@
+-    public_configs = [ ":external_config" ]
++      public_configs = [ ":external_config" ]
++    }
+--- a/src/3rdparty/chromium/gin/arguments.cc
++++ b/src/3rdparty/chromium/gin/arguments.cc
+@@ -53,8 +53,14 @@
+ }
+
+ v8::Local<v8::Context> Arguments::GetHolderCreationContext() const {
+-  v8::Local<v8::Object> holder = is_for_property_ ? info_for_property_->Holder()
+-                                                  : info_for_function_->This();
++  v8::Local<v8::Object> holder =
++      is_for_property_
++#if V8_MAJOR_VERSION >= 14
++          ? info_for_property_->HolderV2()
++#else
++          ? info_for_property_->Holder()
++#endif
++          : info_for_function_->This();
+   return holder->GetCreationContextChecked(isolate_);
+ }
+
+--- a/src/3rdparty/chromium/gin/arguments.h
++++ b/src/3rdparty/chromium/gin/arguments.h
+@@ -9,6 +9,7 @@
+ #include "base/memory/raw_ptr_exclusion.h"
+ #include "gin/converter.h"
+ #include "gin/gin_export.h"
++#include "v8/include/v8-version.h"
+
+ namespace gin {
+
+@@ -27,9 +28,14 @@
+
+   template <typename T>
+   bool GetHolder(T* out) const {
+-    v8::Local<v8::Object> holder = is_for_property_
+-                                       ? info_for_property_->Holder()
+-                                       : info_for_function_->This();
++    v8::Local<v8::Object> holder =
++        is_for_property_
++#if V8_MAJOR_VERSION >= 14
++            ? info_for_property_->HolderV2()
++#else
++            ? info_for_property_->Holder()
++#endif
++            : info_for_function_->This();
+     return ConvertFromV8(isolate_, holder, out);
+   }
+
+--- a/src/3rdparty/chromium/gin/object_template_builder.cc
++++ b/src/3rdparty/chromium/gin/object_template_builder.cc
+@@ -12,12 +12,33 @@
+ #include "gin/per_isolate_data.h"
+ #include "gin/public/wrapper_info.h"
+ #include "v8/include/v8-exception.h"
++#include "v8/include/v8-version.h"
+ #include "v8/include/v8-template.h"
+
+ namespace gin {
+
+ namespace {
+
++void* GetAlignedPointerFromInternalField(v8::Local<v8::Object> object,
++                                         int index) {
++#if V8_MAJOR_VERSION >= 14
++  return object->GetAlignedPointerFromInternalField(
++      index, v8::kEmbedderDataTypeTagDefault);
++#else
++  return object->GetAlignedPointerFromInternalField(index);
++#endif
++}
++
++template <typename T>
++v8::Local<v8::Object> GetPropertyCallbackHolder(
++    const v8::PropertyCallbackInfo<T>& info) {
++#if V8_MAJOR_VERSION >= 14
++  return info.HolderV2();
++#else
++  return info.Holder();
++#endif
++}
++
+ WrappableBase* WrappableFromV8(v8::Isolate* isolate,
+                                v8::Local<v8::Value> val) {
+   if (!val->IsObject()) {
+@@ -35,7 +56,7 @@
+   // from WrappableBase. We look up the pointer in a global registry, to make
+   // sure it's actually pointed to a valid life object.
+   return static_cast<WrappableBase*>(
+-      obj->GetAlignedPointerFromInternalField(kEncodedValueIndex));
++      GetAlignedPointerFromInternalField(obj, kEncodedValueIndex));
+ }
+
+ NamedPropertyInterceptor* NamedInterceptorFromV8(v8::Isolate* isolate,
+@@ -62,7 +83,7 @@
+     const v8::PropertyCallbackInfo<v8::Value>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   NamedPropertyInterceptor* interceptor =
+-      NamedInterceptorFromV8(isolate, info.Holder());
++      NamedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (!interceptor) {
+     return v8::Intercepted::kNo;
+   }
+@@ -83,7 +104,7 @@
+     const v8::PropertyCallbackInfo<void>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   NamedPropertyInterceptor* interceptor =
+-      NamedInterceptorFromV8(isolate, info.Holder());
++      NamedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (!interceptor) {
+     return v8::Intercepted::kNo;
+   }
+@@ -100,7 +121,7 @@
+     const v8::PropertyCallbackInfo<v8::Integer>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   NamedPropertyInterceptor* interceptor =
+-      NamedInterceptorFromV8(isolate, info.Holder());
++      NamedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (!interceptor) {
+     return v8::Intercepted::kNo;
+   }
+@@ -116,7 +137,7 @@
+ void NamedPropertyEnumerator(const v8::PropertyCallbackInfo<v8::Array>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   NamedPropertyInterceptor* interceptor =
+-      NamedInterceptorFromV8(isolate, info.Holder());
++      NamedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (!interceptor) {
+     return;
+   }
+@@ -133,7 +154,7 @@
+     const v8::PropertyCallbackInfo<v8::Integer>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   IndexedPropertyInterceptor* interceptor =
+-      IndexedInterceptorFromV8(isolate, info.Holder());
++      IndexedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (interceptor &&
+       !interceptor->GetIndexedProperty(isolate, index).IsEmpty()) {
+     info.GetReturnValue().Set(v8::None);
+@@ -147,7 +168,7 @@
+     const v8::PropertyCallbackInfo<v8::Value>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   IndexedPropertyInterceptor* interceptor =
+-      IndexedInterceptorFromV8(isolate, info.Holder());
++      IndexedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (!interceptor) {
+     return v8::Intercepted::kNo;
+   }
+@@ -165,7 +186,7 @@
+     const v8::PropertyCallbackInfo<void>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   IndexedPropertyInterceptor* interceptor =
+-      IndexedInterceptorFromV8(isolate, info.Holder());
++      IndexedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (interceptor && interceptor->SetIndexedProperty(isolate, index, value)) {
+     return v8::Intercepted::kYes;
+   }
+@@ -176,7 +197,7 @@
+     const v8::PropertyCallbackInfo<v8::Array>& info) {
+   v8::Isolate* isolate = info.GetIsolate();
+   IndexedPropertyInterceptor* interceptor =
+-      IndexedInterceptorFromV8(isolate, info.Holder());
++      IndexedInterceptorFromV8(isolate, GetPropertyCallbackHolder(info));
+   if (!interceptor) {
+     return;
+   }
+--- a/src/3rdparty/chromium/gin/wrappable.cc
++++ b/src/3rdparty/chromium/gin/wrappable.cc
+@@ -9 +9,2 @@
+ #include "gin/per_isolate_data.h"
++#include "v8/include/v8-version.h"
+@@ -11 +12,29 @@
+ namespace gin {
++namespace {
++
++void SetAlignedPointerInInternalFields(v8::Local<v8::Object> object,
++                                       int count,
++                                       int* indices,
++                                       void** values) {
++#if V8_MAJOR_VERSION >= 14
++  for (int i = 0; i < count; ++i) {
++    object->SetAlignedPointerInInternalField(
++        indices[i], values[i], v8::kEmbedderDataTypeTagDefault);
++  }
++#else
++  object->SetAlignedPointerInInternalFields(count, indices, values);
++#endif
++}
++
++void* GetAlignedPointerFromInternalField(v8::Local<v8::Object> object,
++                                         int index) {
++#if V8_MAJOR_VERSION >= 14
++  return object->GetAlignedPointerFromInternalField(
++      index, v8::kEmbedderDataTypeTagDefault);
++#else
++  return object->GetAlignedPointerFromInternalField(index);
++#endif
++}
++
++}  // namespace
++
+@@ -72 +101 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapperImpl(v8::Isolate* isolate,
+-  wrapper->SetAlignedPointerInInternalFields(2, indices, values);
++  SetAlignedPointerInInternalFields(wrapper, 2, indices, values);
+@@ -98 +127 @@ void* FromV8Impl(v8::Isolate* isolate, v8::Local<v8::Value> val,
+-  return obj->GetAlignedPointerFromInternalField(kEncodedValueIndex);
++  return GetAlignedPointerFromInternalField(obj, kEncodedValueIndex);
+--- a/src/3rdparty/chromium/gin/wrapper_info.cc
++++ b/src/3rdparty/chromium/gin/wrapper_info.cc
+@@ -11,6 +11,7 @@ WrapperInfo* WrapperInfo::From(v8::Local<v8::Object> object) {
+   if (object->InternalFieldCount() != kNumberOfInternalFields)
+     return NULL;
+   WrapperInfo* info = static_cast<WrapperInfo*>(
+-      object->GetAlignedPointerFromInternalField(kWrapperInfoIndex));
++      object->GetAlignedPointerFromInternalField(
++          kWrapperInfoIndex, v8::kEmbedderDataTypeTagDefault));
+   return info->embedder == kEmbedderNativeGin ? info : NULL;
+ }
+--- a/src/3rdparty/chromium/gin/isolate_holder.cc
++++ b/src/3rdparty/chromium/gin/isolate_holder.cc
+@@ -24,6 +24,7 @@
+ #include "gin/v8_isolate_memory_dump_provider.h"
+ #include "gin/v8_shared_memory_dump_provider.h"
+ #include "v8/include/v8-isolate.h"
++#include "v8/include/v8-version.h"
+ #include "v8/include/v8-locker.h"
+ #include "v8/include/v8-snapshot.h"
+
+@@ -186,8 +187,10 @@
+   params->array_buffer_allocator = g_array_buffer_allocator;
+   params->allow_atomics_wait = true;
+   params->external_references = g_reference_table;
++#if V8_MAJOR_VERSION < 14
+   params->embedder_wrapper_type_index = kWrapperInfoIndex;
+   params->embedder_wrapper_object_index = kEncodedValueIndex;
++#endif
+   params->fatal_error_callback = g_fatal_error_callback;
+   params->oom_error_callback = g_oom_error_callback;
+   return params;
