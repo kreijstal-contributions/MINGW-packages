@@ -8,6 +8,7 @@ pkgrel=1
 pkgdesc='Provides support for web applications using the Chromium browser project'
 arch=(any)
 mingw_arch=('ucrt64' 'clang64' 'mingw64') #('mingw64' 'ucrt64' 'clang64' 'clangarm64')
+options=(!strip)
 url='https://www.qt.io'
 msys2_references=(
   'archlinux: qt6-webengine'
@@ -47,6 +48,7 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-qt6-declarative"
              "${MINGW_PACKAGE_PREFIX}-qt6-httpserver"
              "${MINGW_PACKAGE_PREFIX}-qt6-tools"
+             "${MINGW_PACKAGE_PREFIX}-ripgrep"
              "rsync")
 _pkgfn="${_realname/6-/}-everywhere-src-${pkgver}"
 source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/submodules/${_pkgfn}.tar.xz"
@@ -166,8 +168,8 @@ prepare() {
   sed -i 's@#include <dxcore.h>@#include <directx/dxcore.h>@g; s@_uuidof(ID3D12Device)@__uuidof(ID3D12Device)@g' \
     src/3rdparty/chromium/gpu/config/gpu_info_collector_win.cc
 
-  grep -rlZ --include='*.cc' --include='*.cpp' --include='*.h' --include='*.hpp' 'v8/include/' \
-    src/3rdparty/chromium \
+  rg -l -0 'v8/include/' src/3rdparty/chromium \
+    -g '*.cc' -g '*.cpp' -g '*.h' -g '*.hpp' \
     | xargs -0 -r sed -i 's@#include "\([^"]*\)v8/include/@#include "\1@g; s@#include <\([^>]*\)v8/include/@#include <\1@g'
 
   apply_patch_with_msg \
@@ -186,13 +188,16 @@ prepare() {
   apply_patch_with_msg \
     0201-gn-mingw-fixes.patch
 
-  find src/3rdparty/chromium -type f \( -name '*.gn' -o -name '*.gni' \) -print0 \
-    | xargs -0 sed -i \
+  rg -l -0 '"(pdh|crypt32|d3d11|dxgi|dcomp)\.lib"' src/3rdparty/chromium \
+    -g '*.gn' -g '*.gni' \
+    | xargs -0 -r sed -i \
       -e 's@"pdh\.lib"@"pdh"@g' \
       -e 's@"crypt32\.lib"@"crypt32"@g' \
       -e 's@"d3d11\.lib"@"d3d11"@g' \
       -e 's@"dxgi\.lib"@"dxgi"@g' \
       -e 's@"dcomp\.lib"@"dcomp"@g'
+
+  find src/3rdparty/chromium -type f -exec touch -d @946684800 {} +
 
   sed -i \
     -e 's@enable_widevine=true@enable_widevine=false@g' \
@@ -253,52 +258,84 @@ build() {
   local _ninja_dir="${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
   local _ninja_dir_mixed="$(cygpath -m "${_ninja_dir}")"
   local _private_dir="${srcdir}/qtwebengine-thirdparty-private"
-  local _ar="${AR:-ar}"
 
   rm -rf "${_private_dir}"
-  install -d "${_private_dir}/obj" "${_private_dir}/lib"
+  install -d "${_private_dir}"
 
   tr ' ' '\n' < "${_ninja_dir}/QtWebEngineCore_archives.rsp" \
     | sed -e 's/^"//' -e 's/"$//' \
-    | grep '/obj/third_party/.*\.a$' > "${_private_dir}/thirdparty-archives.list"
+    | grep '/obj/.*\.a$' > "${_private_dir}/thirdparty-archives.list"
 
   tr ' ' '\n' < "${_ninja_dir}/QtWebEngineCore_objects.rsp" \
     | sed -e 's/^"//' -e 's/"$//' \
-    | grep '/obj/third_party/.*\.o$' > "${_private_dir}/thirdparty-objects.rsp"
+    | grep '/obj/.*\.o$' \
+    | grep -v '/obj/QtWebEngineCore/' \
+    | grep -v '/obj/qtwebengine_sources/' > "${_private_dir}/thirdparty-objects.rsp"
 
   sed "s#^${_ninja_dir_mixed}/##" \
     "${_private_dir}/thirdparty-archives.list" \
     "${_private_dir}/thirdparty-objects.rsp" \
     | xargs -r ninja -C "${_ninja_dir}"
-
-  while IFS= read -r _archive; do
-    install -Dm644 "${_archive}" "${_private_dir}/obj/${_archive#${_ninja_dir_mixed}/obj/}"
-  done < "${_private_dir}/thirdparty-archives.list"
-
-  xargs -a "${_private_dir}/thirdparty-objects.rsp" \
-    "${_ar}" crs "${_private_dir}/lib/libQt6WebEngineThirdPartyObjects.a"
+  ninja -C "${_ninja_dir}" QtWebEngineCoreSandbox
 
   sed "s#^${_ninja_dir_mixed}/#${MINGW_PREFIX}/lib/qt6-webengine-private/#" \
     "${_private_dir}/thirdparty-archives.list" \
     > "${_private_dir}/qtwebengine-thirdparty-archives.rsp"
+  sed "s#^${_ninja_dir_mixed}/#${MINGW_PREFIX}/lib/qt6-webengine-private/#" \
+    "${_private_dir}/thirdparty-objects.rsp" \
+    > "${_private_dir}/qtwebengine-thirdparty-objects.rsp"
+
+  {
+    sed "s#^${_ninja_dir_mixed}/##" \
+      "${_private_dir}/thirdparty-archives.list" \
+      "${_private_dir}/thirdparty-objects.rsp"
+    printf '%s\n' libQtWebEngineCoreSandbox.a
+    awk -F '\t' 'NR > 1 { print $4 }' "${_ninja_dir}/.ninja_log" \
+      | sed 's#\\#/#g'
+  } \
+    | sort -u \
+    | while IFS= read -r _output; do
+        [[ -f "${_ninja_dir}/${_output}" ]] || continue
+        printf '%s\n' "${_output}"
+      done > "${_private_dir}/qtwebengine-thirdparty-build-outputs.list"
+  grep -q '^libQtWebEngineCoreSandbox\.a$' "${_private_dir}/qtwebengine-thirdparty-build-outputs.list"
 }
 
 package_qt6-webengine-thirdparty() {
   depends+=("${MINGW_PACKAGE_PREFIX}-qt6-base"
             "${MINGW_PACKAGE_PREFIX}-qt6-httpserver")
   groups=("${MINGW_PACKAGE_PREFIX}-qt6")
-  pkgdesc='Private third-party static archives for qt6-webengine (mingw-w64)'
+  pkgdesc='Private third-party objects and archives for qt6-webengine (mingw-w64)'
 
   install -d "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}"
   install -Dm644 ${_pkgfn}/LICENSES/* -t "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}"
 
   install -d "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private"
-  cp -a "${srcdir}/qtwebengine-thirdparty-private/obj" \
-    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/"
-  install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/lib/libQt6WebEngineThirdPartyObjects.a" \
-    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/libQt6WebEngineThirdPartyObjects.a"
+  local _ninja_dir="${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
+  local _ninja_dir_mixed="$(cygpath -m "${_ninja_dir}")"
+  local _private_dir="${srcdir}/qtwebengine-thirdparty-private"
+
+  (cd "${_ninja_dir}" \
+    && xargs -r cp -a --no-preserve=mode --parents -t "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private" \
+      < "${_private_dir}/qtwebengine-thirdparty-build-outputs.list")
+
   install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/qtwebengine-thirdparty-archives.rsp" \
     "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/qtwebengine-thirdparty-archives.rsp"
+  install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/qtwebengine-thirdparty-objects.rsp" \
+    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/qtwebengine-thirdparty-objects.rsp"
+  install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/qtwebengine-thirdparty-build-outputs.list" \
+    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/qtwebengine-thirdparty-build-outputs.list"
+  install -Dm644 "${_ninja_dir}/.ninja_log" \
+    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/.ninja_log"
+  install -Dm644 "${_ninja_dir}/.ninja_deps" \
+    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/.ninja_deps"
+
+  install -d "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/include/third_party"
+  (cd "${srcdir}/${_pkgfn}/src/3rdparty/chromium/third_party" \
+    && find . -type f -name '*.h' -print0 \
+    | tar --null -T - -cf -) \
+    | (cd "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/include/third_party" \
+      && tar -xf -)
 }
 
 # template start; name=mingw-w64-splitpkg-wrappers; version=1.0;
