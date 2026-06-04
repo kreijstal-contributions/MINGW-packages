@@ -8,7 +8,6 @@ pkgrel=1
 pkgdesc='Provides support for web applications using the Chromium browser project'
 arch=(any)
 mingw_arch=('ucrt64' 'clang64' 'mingw64') #('mingw64' 'ucrt64' 'clang64' 'clangarm64')
-options=(!strip)
 url='https://www.qt.io'
 msys2_references=(
   'archlinux: qt6-webengine'
@@ -48,7 +47,6 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-qt6-declarative"
              "${MINGW_PACKAGE_PREFIX}-qt6-httpserver"
              "${MINGW_PACKAGE_PREFIX}-qt6-tools"
-             "${MINGW_PACKAGE_PREFIX}-ripgrep"
              "rsync")
 _pkgfn="${_realname/6-/}-everywhere-src-${pkgver}"
 source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/submodules/${_pkgfn}.tar.xz"
@@ -168,8 +166,8 @@ prepare() {
   sed -i 's@#include <dxcore.h>@#include <directx/dxcore.h>@g; s@_uuidof(ID3D12Device)@__uuidof(ID3D12Device)@g' \
     src/3rdparty/chromium/gpu/config/gpu_info_collector_win.cc
 
-  rg -l -0 'v8/include/' src/3rdparty/chromium \
-    -g '*.cc' -g '*.cpp' -g '*.h' -g '*.hpp' \
+  grep -rlZ --include='*.cc' --include='*.cpp' --include='*.h' --include='*.hpp' 'v8/include/' \
+    src/3rdparty/chromium \
     | xargs -0 -r sed -i 's@#include "\([^"]*\)v8/include/@#include "\1@g; s@#include <\([^>]*\)v8/include/@#include <\1@g'
 
   apply_patch_with_msg \
@@ -185,24 +183,93 @@ prepare() {
     0110-chromium-third-party-webrtc.patch \
     0111-chromium-third-party-others.patch
 
+  perl -0pi -e 's@import optparse\nimport shlex@import os\nimport optparse\nimport shlex@' \
+    src/3rdparty/chromium/third_party/blink/renderer/bindings/scripts/collect_idl_files.py
+  perl -0pi -e 's@    for filepath in filepaths:\n        ast_group.add_ast_node\(idl_parser.ParseFile\(parser, filepath\)\)@    private_chromium_dir = os.environ.get("QTWEBENGINE_PRIVATE_CHROMIUM_DIR")\n    if not private_chromium_dir:\n        private_chromium_dir = os.path.abspath(os.path.join(\n            os.path.dirname(__file__), "..", "..", "..", "..", ".."))\n\n    def _use_private_chromium_path(filepath):\n        if os.path.exists(filepath):\n            return filepath\n        normalized_path = filepath.replace("\\\\", "/")\n        third_party_marker = "/third_party/"\n        marker_index = normalized_path.find(third_party_marker)\n        if marker_index < 0:\n            return filepath\n        private_path = os.path.join(\n            private_chromium_dir,\n            normalized_path[marker_index + 1:].replace("/", os.sep))\n        if os.path.exists(private_path):\n            return private_path\n        return filepath\n\n    for filepath in filepaths:\n        ast_group.add_ast_node(idl_parser.ParseFile(\n            parser, _use_private_chromium_path(filepath)))@' \
+    src/3rdparty/chromium/third_party/blink/renderer/bindings/scripts/collect_idl_files.py
+  grep -q '_use_private_chromium_path' \
+    src/3rdparty/chromium/third_party/blink/renderer/bindings/scripts/collect_idl_files.py
+
   apply_patch_with_msg \
     0201-gn-mingw-fixes.patch
 
-  rg -l -0 '"(pdh|crypt32|d3d11|dxgi|dcomp)\.lib"' src/3rdparty/chromium \
-    -g '*.gn' -g '*.gni' \
-    | xargs -0 -r sed -i \
+  find src/3rdparty/chromium -type f \( -name '*.gn' -o -name '*.gni' \) -print0 \
+    | xargs -0 sed -i \
       -e 's@"pdh\.lib"@"pdh"@g' \
       -e 's@"crypt32\.lib"@"crypt32"@g' \
       -e 's@"d3d11\.lib"@"d3d11"@g' \
       -e 's@"dxgi\.lib"@"dxgi"@g' \
       -e 's@"dcomp\.lib"@"dcomp"@g'
 
-  find src/3rdparty/chromium -type f -exec touch -d @946684800 {} +
+  cat > src/3rdparty/chromium/build/config/qtwebengine_private_paths.gni <<'EOF'
+declare_args() {
+  qtwebengine_private_chromium_include_dir = ""
+}
+EOF
+
+  local _private_tool_dir="$(cygpath -m "${MINGW_PREFIX}/lib/qt6-webengine-private/bin")"
+  perl -0pi -e "s@perfetto_root_path = invoker\\.perfetto_root_path\\n\\n    generate_cc = false\\n    generate_python = false\\n    generator_plugin_label =\\n        perfetto_root_path \\+ \"src/protozero/protoc_plugin:protozero_plugin\"@generate_cc = false\\n    generate_python = false\\n    generator_plugin_script = \"${_private_tool_dir}/protozero_plugin.exe\"@s; s@perfetto_root_path = invoker\\.perfetto_root_path\\n\\n    generate_cc = false\\n    generate_python = false\\n    generator_plugin_label =\\n        perfetto_root_path \\+ \"src/protozero/protoc_plugin:cppgen_plugin\"@generate_cc = false\\n    generate_python = false\\n    generator_plugin_script = \"${_private_tool_dir}/cppgen_plugin.exe\"@s; s@perfetto_root_path \\+ \"src/protozero\"@invoker.perfetto_root_path + \"src/protozero\"@g; s@\"\\\$perfetto_root_path/(gn:default_deps|include/perfetto/base|src/protozero)\"@invoker.perfetto_root_path + \"\\1\"@g" \
+    src/3rdparty/chromium/third_party/perfetto/gn/proto_library.gni
+  sed -i \
+    -e '/generator_plugin_script = ".*protozero_plugin.exe"/i\    assert(invoker.perfetto_root_path != "", "perfetto_root_path must be set")' \
+    -e '/generator_plugin_script = ".*cppgen_plugin.exe"/i\    assert(invoker.perfetto_root_path != "", "perfetto_root_path must be set")' \
+    src/3rdparty/chromium/third_party/perfetto/gn/proto_library.gni
+  sed -i \
+    -e '/deps = \[ qtwebengine_target \]/c\    deps = [\n      qtwebengine_target,\n      "//third_party/perfetto/src/protozero/protoc_plugin:cppgen_plugin",\n      "//third_party/perfetto/src/protozero/protoc_plugin:protozero_plugin",\n    ]' \
+    src/3rdparty/chromium/BUILD.gn
+  perl -0pi -e "s@_protoc_path = get_label_info\\(_protoc_label, \"root_out_dir\"\\) \\+ \"/protoc\" \\+\\n\\s*_host_executable_suffix@_protoc_path = \"${_private_tool_dir}/protoc.exe\"@s" \
+    src/3rdparty/chromium/third_party/protobuf/proto_library.gni
+  sed -i '/import("\/\/build\/config\/qtwebengine_private_paths.gni")/d' \
+    src/3rdparty/chromium/third_party/protobuf/proto_library.gni
+  sed -i '/import("\/\/build\/config\/sanitizers\/sanitizers.gni")/a import("//build/config/qtwebengine_private_paths.gni")' \
+    src/3rdparty/chromium/third_party/protobuf/proto_library.gni
+  sed -i 's@os.path.relpath(options.plugin)@os.path.realpath(options.plugin)@' \
+    src/3rdparty/chromium/tools/protoc_wrapper/protoc_wrapper.py
+  perl -0pi -e 's@(    if \(defined\(invoker\.import_dirs\)\) \{\n      foreach\(path, invoker\.import_dirs\) \{\n        args \+= \[ "--import-dir=" \+ rebase_path\(path, root_build_dir\) \]\n      \}\n    \}\n)@$1\n    if (defined(invoker.import_dirs) && qtwebengine_private_chromium_include_dir != "") {\n      args += [ "--import-dir=" + rebase_path(qtwebengine_private_chromium_include_dir, root_build_dir) ]\n    }\n@s' \
+    src/3rdparty/chromium/third_party/protobuf/proto_library.gni
+  if [ -f src/3rdparty/chromium/content/browser/renderer_host/input/BUILD.gn ]; then
+    sed -i '/stylus_handwriting_controller_win\.\(cc\|h\)/d' \
+      src/3rdparty/chromium/content/browser/renderer_host/input/BUILD.gn
+  fi
+  if [ -f src/3rdparty/chromium/content/browser/renderer_host/input/stylus_handwriting_controller_win.h ]; then
+    perl -0pi -e 's@#include <ShellHandwriting\.h>@#if defined(COMPILER_MSVC)\n#include <ShellHandwriting.h>\n#endif@' \
+      src/3rdparty/chromium/content/browser/renderer_host/input/stylus_handwriting_controller_win.h
+  fi
+  sed -i \
+    -e 's@# System protoc is not used so.*@# Use the packaged private protoc instead of rebuilding bundled protobuf in core.@' \
+    -e 's@enable_js_protobuf = !is_cronet_build@enable_js_protobuf = false@' \
+    -e 's@generate_javascript = invoker.generate_javascript@generate_javascript = invoker.generate_javascript \&\& enable_js_protobuf@' \
+    -e 's@inputs = \[ _protoc_path \]@inputs = []@' \
+    -e 's@deps = \[ _protoc_label \]@deps = []@' \
+    src/3rdparty/chromium/third_party/protobuf/proto_library.gni
+  sed -i '/import("\/\/build\/config\/qtwebengine_private_paths.gni")/d' \
+    src/3rdparty/chromium/third_party/blink/public/devtools_protocol/BUILD.gn
+  sed -i '1a import("//build/config/qtwebengine_private_paths.gni")' \
+    src/3rdparty/chromium/third_party/blink/public/devtools_protocol/BUILD.gn
+  perl -0pi -e 's@_inspector_protocol_dir = "//third_party/inspector_protocol"\n_protocol_out_dir@if (qtwebengine_private_chromium_include_dir != "") {\n  _inspector_protocol_dir = qtwebengine_private_chromium_include_dir + "/third_party/inspector_protocol"\n  _browser_protocol_pdl = qtwebengine_private_chromium_include_dir + "/third_party/blink/public/devtools_protocol/browser_protocol.pdl"\n  _browser_protocol_compat_json = qtwebengine_private_chromium_include_dir + "/third_party/blink/public/devtools_protocol/browser_protocol-1.3.json"\n} else {\n  _inspector_protocol_dir = "//third_party/inspector_protocol"\n  _browser_protocol_pdl = "browser_protocol.pdl"\n  _browser_protocol_compat_json = "browser_protocol-1.3.json"\n}\n_protocol_out_dir@' \
+    src/3rdparty/chromium/third_party/blink/public/devtools_protocol/BUILD.gn
+  sed -i \
+    -e 's@"browser_protocol.pdl"@_browser_protocol_pdl@g' \
+    -e 's@"browser_protocol-1.3.json"@_browser_protocol_compat_json@g' \
+    src/3rdparty/chromium/third_party/blink/public/devtools_protocol/BUILD.gn
+  sed -i \
+    -e 's@_browser_protocol_pdl = _browser_protocol_pdl@_browser_protocol_pdl = "browser_protocol.pdl"@' \
+    -e 's@_browser_protocol_compat_json = _browser_protocol_compat_json@_browser_protocol_compat_json = "browser_protocol-1.3.json"@' \
+    src/3rdparty/chromium/third_party/blink/public/devtools_protocol/BUILD.gn
 
   sed -i \
     -e 's@enable_widevine=true@enable_widevine=false@g' \
     -e 's@devtools_dcheck_always_on=true@devtools_dcheck_always_on=false@g' \
     src/core/CMakeLists.txt
+
+  perl -0pi -e 's@const srcPath = path\.join\(process\.cwd\(\), src\);\nconst destPath = path\.join\(process\.cwd\(\), dest\);@const srcPath = path.isAbsolute(src) ? src : path.join(process.cwd(), src);\nconst destPath = path.isAbsolute(dest) ? dest : path.join(process.cwd(), dest);@' \
+    src/3rdparty/chromium/third_party/devtools-frontend/src/scripts/build/ninja/copy-file.js
+  grep -q 'path.isAbsolute(src)' \
+    src/3rdparty/chromium/third_party/devtools-frontend/src/scripts/build/ninja/copy-file.js
+  perl -0pi -e 's@const originalFrontendMappedLocation =\n    path\.relative\(path\.dirname\(tsconfigLocation\), path\.join\(process\.cwd\(\), originalFileLocation\)\);@const originalPath = path.isAbsolute(originalFileLocation) || /^[A-Za-z]:[\\\\/]/.test(originalFileLocation) ?\n    originalFileLocation :\n    path.join(process.cwd(), originalFileLocation);\nconst originalFrontendMappedLocation =\n    path.relative(path.dirname(tsconfigLocation), originalPath);@' \
+    src/3rdparty/chromium/third_party/devtools-frontend/src/scripts/build/ninja/generate-tsconfig.js
+  grep -q 'path.isAbsolute(originalFileLocation)' \
+    src/3rdparty/chromium/third_party/devtools-frontend/src/scripts/build/ninja/generate-tsconfig.js
 }
 
 build() {
@@ -212,6 +279,15 @@ build() {
   export TMPDIR="${_build_tmp}"
   export TMP="${_build_tmp}"
   export TEMP="${_build_tmp}"
+  local _private_paths_gni="${srcdir}/${_pkgfn}/src/3rdparty/chromium/build/config/qtwebengine_private_paths.gni"
+  if [[ ! -f "${_private_paths_gni}" ]]; then
+    mkdir -p "$(dirname "${_private_paths_gni}")"
+    cat > "${_private_paths_gni}" <<'EOF'
+declare_args() {
+  qtwebengine_private_chromium_include_dir = ""
+}
+EOF
+  fi
 
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   cmake -Wno-dev \
@@ -258,84 +334,179 @@ build() {
   local _ninja_dir="${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
   local _ninja_dir_mixed="$(cygpath -m "${_ninja_dir}")"
   local _private_dir="${srcdir}/qtwebengine-thirdparty-private"
+  local _private_bin="${_private_dir}/bin"
+  local _ar="${AR:-ar}"
 
   rm -rf "${_private_dir}"
-  install -d "${_private_dir}"
+  install -d "${_private_dir}/obj" "${_private_dir}/lib" "${_private_bin}"
 
   tr ' ' '\n' < "${_ninja_dir}/QtWebEngineCore_archives.rsp" \
     | sed -e 's/^"//' -e 's/"$//' \
-    | grep '/obj/.*\.a$' > "${_private_dir}/thirdparty-archives.list"
+    | grep -E '/obj/(third_party|skia)/.*\.a$' > "${_private_dir}/thirdparty-archives.list"
 
   tr ' ' '\n' < "${_ninja_dir}/QtWebEngineCore_objects.rsp" \
     | sed -e 's/^"//' -e 's/"$//' \
-    | grep '/obj/.*\.o$' \
-    | grep -v '/obj/QtWebEngineCore/' \
-    | grep -v '/obj/qtwebengine_sources/' > "${_private_dir}/thirdparty-objects.rsp"
+    | grep -E '/obj/(third_party|skia)/.*\.o$' > "${_private_dir}/thirdparty-objects.rsp"
 
   sed "s#^${_ninja_dir_mixed}/##" \
     "${_private_dir}/thirdparty-archives.list" \
     "${_private_dir}/thirdparty-objects.rsp" \
     | xargs -r ninja -C "${_ninja_dir}"
-  ninja -C "${_ninja_dir}" QtWebEngineCoreSandbox
+
+  while IFS= read -r _archive; do
+    install -Dm644 "${_archive}" "${_private_dir}/obj/${_archive#${_ninja_dir_mixed}/obj/}"
+  done < "${_private_dir}/thirdparty-archives.list"
+
+  xargs -a "${_private_dir}/thirdparty-objects.rsp" \
+    "${_ar}" crs "${_private_dir}/lib/libQt6WebEngineThirdPartyObjects.a"
 
   sed "s#^${_ninja_dir_mixed}/#${MINGW_PREFIX}/lib/qt6-webengine-private/#" \
     "${_private_dir}/thirdparty-archives.list" \
     > "${_private_dir}/qtwebengine-thirdparty-archives.rsp"
-  sed "s#^${_ninja_dir_mixed}/#${MINGW_PREFIX}/lib/qt6-webengine-private/#" \
-    "${_private_dir}/thirdparty-objects.rsp" \
-    > "${_private_dir}/qtwebengine-thirdparty-objects.rsp"
 
-  {
-    sed "s#^${_ninja_dir_mixed}/##" \
-      "${_private_dir}/thirdparty-archives.list" \
-      "${_private_dir}/thirdparty-objects.rsp"
-    printf '%s\n' libQtWebEngineCoreSandbox.a
-    awk -F '\t' 'NR > 1 { print $4 }' "${_ninja_dir}/.ninja_log" \
-      | sed 's#\\#/#g'
-  } \
-    | sort -u \
-    | while IFS= read -r _output; do
-        [[ -f "${_ninja_dir}/${_output}" ]] || continue
-        printf '%s\n' "${_output}"
-      done > "${_private_dir}/qtwebengine-thirdparty-build-outputs.list"
-  grep -q '^libQtWebEngineCoreSandbox\.a$' "${_private_dir}/qtwebengine-thirdparty-build-outputs.list"
+  ninja -C "${_ninja_dir}" \
+    gen/net/http/transport_security_state_static.h \
+    gen/third_party/metrics_proto/chrome_user_metrics_extension.pb.h \
+    protoc.exe protozero_plugin.exe cppgen_plugin.exe brotli.exe
+  install -Dm755 "${_ninja_dir}/protoc.exe" \
+    "${_private_bin}/protoc.exe"
+  install -Dm755 "${_ninja_dir}/protozero_plugin.exe" \
+    "${_private_bin}/protozero_plugin.exe"
+  install -Dm755 "${_ninja_dir}/cppgen_plugin.exe" \
+    "${_private_bin}/cppgen_plugin.exe"
+  install -Dm755 "${_ninja_dir}/brotli.exe" \
+    "${_private_bin}/brotli.exe"
 }
 
 package_qt6-webengine-thirdparty() {
   depends+=("${MINGW_PACKAGE_PREFIX}-qt6-base"
             "${MINGW_PACKAGE_PREFIX}-qt6-httpserver")
   groups=("${MINGW_PACKAGE_PREFIX}-qt6")
-  pkgdesc='Private third-party objects and archives for qt6-webengine (mingw-w64)'
+  pkgdesc='Private third-party static archives for qt6-webengine (mingw-w64)'
 
   install -d "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}"
   install -Dm644 ${_pkgfn}/LICENSES/* -t "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}"
 
   install -d "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private"
-  local _ninja_dir="${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
-  local _ninja_dir_mixed="$(cygpath -m "${_ninja_dir}")"
-  local _private_dir="${srcdir}/qtwebengine-thirdparty-private"
-
-  (cd "${_ninja_dir}" \
-    && xargs -r cp -a --no-preserve=mode --parents -t "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private" \
-      < "${_private_dir}/qtwebengine-thirdparty-build-outputs.list")
-
+  cp -a "${srcdir}/qtwebengine-thirdparty-private/obj" \
+    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/"
+  cp -a "${srcdir}/qtwebengine-thirdparty-private/bin" \
+    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/"
+  install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/lib/libQt6WebEngineThirdPartyObjects.a" \
+    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/libQt6WebEngineThirdPartyObjects.a"
   install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/qtwebengine-thirdparty-archives.rsp" \
     "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/qtwebengine-thirdparty-archives.rsp"
-  install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/qtwebengine-thirdparty-objects.rsp" \
-    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/qtwebengine-thirdparty-objects.rsp"
-  install -Dm644 "${srcdir}/qtwebengine-thirdparty-private/qtwebengine-thirdparty-build-outputs.list" \
-    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/qtwebengine-thirdparty-build-outputs.list"
-  install -Dm644 "${_ninja_dir}/.ninja_log" \
-    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/.ninja_log"
-  install -Dm644 "${_ninja_dir}/.ninja_deps" \
-    "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/.ninja_deps"
 
-  install -d "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/include/third_party"
-  (cd "${srcdir}/${_pkgfn}/src/3rdparty/chromium/third_party" \
-    && find . -type f -name '*.h' -print0 \
-    | tar --null -T - -cf -) \
-    | (cd "${pkgdir}${MINGW_PREFIX}/lib/qt6-webengine-private/include/third_party" \
-      && tar -xf -)
+  local _private_chromium_src="${srcdir}/${_pkgfn}/src/3rdparty/chromium"
+  local _private_chromium_dst="${pkgdir}${MINGW_PREFIX}/share/qt6-webengine-private/chromium"
+  install -d "${_private_chromium_dst}"
+  install -Dm644 "${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64/gen/net/http/transport_security_state_static.h" \
+    "${_private_chromium_dst}/net/http/transport_security_state_static.h"
+  install -Dm644 "${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64/gen/third_party/blink/public/strings/grit/blink_strings.h" \
+    "${_private_chromium_dst}/third_party/blink/public/strings/grit/blink_strings.h"
+  rsync -a --prune-empty-dirs \
+    --include='*/' \
+    --include='*.pb.h' \
+    --exclude='*' \
+    "${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64/gen/third_party/metrics_proto" \
+    "${_private_chromium_dst}/third_party/"
+  rsync -a --prune-empty-dirs \
+    --exclude='icu/***' \
+    --include='*/' \
+    --include='*.gn' --include='*.gni' \
+    --include='*.h' --include='*.hh' --include='*.hpp' --include='*.inc' \
+    --include='*.py' --include='*.pydeps' \
+    --include='*.json' --include='*.json5' --include='*.mojom' --include='*.pdl' --include='*.proto' \
+    --include='*.grd' --include='*.grdp' --include='*.pak' \
+    --include='*.idl' --include='*.jinja2' --include='*.tmpl' --include='*.template' \
+    --include='*.ids' \
+    --include='*.txt' --include='*.cfg' --include='*.typemap' --include='*.sha1' \
+    --include='BSD_LICENSE' \
+    --exclude='*' \
+    "${_private_chromium_src}/third_party" \
+    "${_private_chromium_dst}/"
+  rsync -a --prune-empty-dirs \
+    --include='*/' \
+    --include='generate_about_tracing_contents' \
+    --include='*.html' --include='*.css' --include='*.js' \
+    --include='*.gif' --include='*.jpg' --include='*.png' --include='*.svg' \
+    --exclude='*' \
+    "${_private_chromium_src}/third_party/catapult" \
+    "${_private_chromium_dst}/third_party/"
+  rsync -a --prune-empty-dirs \
+    --include='*/' \
+    --include='rollup' \
+    --include='tsc' --include='tsserver' \
+    --include='*.avif' --include='*.cjs' --include='*.css' --include='*.cts' \
+    --include='*.gif' --include='*.html' --include='*.ico' --include='*.js' \
+    --include='*.json' --include='*.map' --include='*.md' --include='*.mjs' --include='*.png' --include='*.svg' \
+    --include='*.ts' --include='*.mts' --include='*.wasm' --include='*.webp' \
+    --exclude='*' \
+    "${_private_chromium_src}/third_party/devtools-frontend" \
+    "${_private_chromium_dst}/third_party/"
+  install -Dm644 "${_private_chromium_src}/third_party/icu/BUILD.gn" \
+    "${_private_chromium_dst}/third_party/icu/BUILD.gn"
+  install -Dm644 "${_private_chromium_src}/third_party/icu/config.gni" \
+    "${_private_chromium_dst}/third_party/icu/config.gni"
+  install -Dm644 "${_private_chromium_src}/third_party/icu/sources.gni" \
+    "${_private_chromium_dst}/third_party/icu/sources.gni"
+  install -Dm644 "${_private_chromium_src}/third_party/icu/version.gni" \
+    "${_private_chromium_dst}/third_party/icu/version.gni"
+  install -d "${_private_chromium_dst}/third_party/icu/source/common" \
+    "${_private_chromium_dst}/third_party/icu/source/i18n"
+  cp -a "${MINGW_PREFIX}/include/unicode" \
+    "${_private_chromium_dst}/third_party/icu/source/common/"
+  cp -a "${MINGW_PREFIX}/include/unicode" \
+    "${_private_chromium_dst}/third_party/icu/source/i18n/"
+
+  install -Dm644 "${_private_chromium_src}/third_party/d3/src/d3.min.js" \
+    "${_private_chromium_dst}/third_party/d3/src/d3.min.js"
+  install -Dm644 "${_private_chromium_src}/third_party/d3/src/d3.d.ts" \
+    "${_private_chromium_dst}/third_party/d3/src/d3.d.ts"
+  cp -a "${_private_chromium_src}/third_party/polymer/v3_0" \
+    "${_private_chromium_dst}/third_party/polymer/"
+  cp -a "${_private_chromium_src}/third_party/lit/v3_0" \
+    "${_private_chromium_dst}/third_party/lit/"
+  install -d "${_private_chromium_dst}/third_party/node/node_modules"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/@lit" \
+    "${_private_chromium_dst}/third_party/node/node_modules/"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/lit" \
+    "${_private_chromium_dst}/third_party/node/node_modules/"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/lit-element" \
+    "${_private_chromium_dst}/third_party/node/node_modules/"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/lit-html" \
+    "${_private_chromium_dst}/third_party/node/node_modules/"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/typescript" \
+    "${_private_chromium_dst}/third_party/node/node_modules/"
+  install -d "${_private_chromium_dst}/third_party/node/node_modules/@rollup/wasm-node"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/@rollup/wasm-node/dist" \
+    "${_private_chromium_dst}/third_party/node/node_modules/@rollup/wasm-node/"
+  install -d "${_private_chromium_dst}/third_party/node/node_modules/@types"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/@types/trusted-types" \
+    "${_private_chromium_dst}/third_party/node/node_modules/@types/"
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/commander" \
+    "${_private_chromium_dst}/third_party/node/node_modules/"
+  install -d "${_private_chromium_dst}/third_party/node/node_modules/@jridgewell"
+  for _jridgewell_module in gen-mapping resolve-uri set-array source-map sourcemap-codec trace-mapping; do
+    cp -a "${_private_chromium_src}/third_party/node/node_modules/@jridgewell/${_jridgewell_module}" \
+      "${_private_chromium_dst}/third_party/node/node_modules/@jridgewell/"
+  done
+  cp -a "${_private_chromium_src}/third_party/node/node_modules/terser" \
+    "${_private_chromium_dst}/third_party/node/node_modules/"
+
+  install -d "${pkgdir}${MINGW_PREFIX}/include"
+  rsync -a --prune-empty-dirs \
+    --exclude='icu/***' \
+    --include='*/' \
+    --include='*.h' --include='*.hh' --include='*.hpp' --include='*.inc' \
+    --exclude='*' \
+    "${srcdir}/${_pkgfn}/src/3rdparty/chromium/third_party" \
+    "${pkgdir}${MINGW_PREFIX}/include/"
+
+  rg -l -0 'third_party/icu/source/(common|i18n)/unicode/' \
+    "${_private_chromium_dst}" "${pkgdir}${MINGW_PREFIX}/include" \
+    -g '*.h' -g '*.hh' -g '*.hpp' -g '*.inc' \
+    | xargs -0 -r sed -E -i 's@#include "third_party/icu/source/(common|i18n)/unicode/([^"]+)"@#include "unicode/\2"@g'
 }
 
 # template start; name=mingw-w64-splitpkg-wrappers; version=1.0;
