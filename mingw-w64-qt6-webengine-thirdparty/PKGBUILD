@@ -344,9 +344,75 @@ EOF
     | sed -e 's/^"//' -e 's/"$//' \
     | grep -E '/obj/(third_party|skia)/.*\.a$' > "${_private_dir}/thirdparty-archives.list"
 
+  # Build additional third-party targets required for split-package builds that are
+  # not part of QtWebEngineCore_archives.rsp.
+  local _extra_targets=(
+    third_party/protobuf:protobuf_full
+    third_party/perfetto/protos/perfetto:zero
+    third_party/perfetto/protos/perfetto/trace_processor:zero
+    third_party/perfetto/src/protozero:protozero
+    third_party/perfetto/src/trace_processor:trace_processor
+    third_party/perfetto/src/trace_processor/db/column:column
+    third_party/perfetto/src/tracing:client_api_without_backends
+    third_party/perfetto/src/tracing:platform_impl
+    third_party/perfetto/src/tracing:system_backend_fake
+  )
+  local _target_exit=0
+  local _failed_targets=()
+  for _target in "${_extra_targets[@]}"; do
+    if ! ninja -C "${_ninja_dir}" "${_target}"; then
+      _failed_targets+=("${_target}")
+      _target_exit=1
+    fi
+  done
+  if (( _target_exit != 0 )); then
+    msg2 "Some extra third-party targets were not built: ${_failed_targets[*]}"
+    msg2 "Continuing with currently available outputs."
+  fi
+
+  local _extra_generated_targets=(
+    phony/third_party/perfetto/gn/gen_buildflags
+    phony/third_party/perfetto/protos/perfetto/common/zero_gen
+    phony/third_party/perfetto/protos/perfetto/config/cpp_gen
+    phony/third_party/perfetto/protos/perfetto/config/track_event/cpp_gen
+    phony/third_party/perfetto/protos/perfetto/trace/interned_data/zero_gen
+    phony/third_party/perfetto/protos/perfetto/trace/non_minimal_zero_gen
+    phony/third_party/perfetto/protos/perfetto/trace/track_event/cpp_gen
+    phony/third_party/perfetto/protos/perfetto/trace/track_event/zero_gen
+  )
+  _target_exit=0
+  _failed_targets=()
+  for _target in "${_extra_generated_targets[@]}"; do
+    if ! ninja -C "${_ninja_dir}" "${_target}"; then
+      _failed_targets+=("${_target}")
+      _target_exit=1
+    fi
+  done
+  if (( _target_exit != 0 )); then
+    msg2 "Some extra generated targets were not built: ${_failed_targets[*]}"
+    msg2 "Continuing with currently available outputs."
+  fi
+
   tr ' ' '\n' < "${_ninja_dir}/QtWebEngineCore_objects.rsp" \
     | sed -e 's/^"//' -e 's/"$//' \
     | grep -E '/obj/(third_party|skia)/.*\.o$' > "${_private_dir}/thirdparty-objects.rsp"
+
+  # Add generated third-party archives that are produced outside the original rsp.
+  shopt -s globstar nullglob
+  for _archive in "${_ninja_dir}"/obj/third_party/perfetto/**/*.a \
+                 "${_ninja_dir}"/obj/third_party/protobuf/*.a; do
+    case "${_archive}" in
+      */QtWebEngine*|*libprotobuf_lite.a)
+        continue
+        ;;
+      *)
+        if [[ "${_archive}" == *.a ]]; then
+          printf '%s\n' "${_archive}" >> "${_private_dir}/thirdparty-archives.list"
+        fi
+        ;;
+    esac
+  done
+  sort -u -o "${_private_dir}/thirdparty-archives.list" "${_private_dir}/thirdparty-archives.list"
 
   sed "s#^${_ninja_dir_mixed}/##" \
     "${_private_dir}/thirdparty-archives.list" \
@@ -409,6 +475,12 @@ package_qt6-webengine-thirdparty() {
     --include='*.pb.h' \
     --exclude='*' \
     "${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64/gen/third_party/metrics_proto" \
+    "${_private_chromium_dst}/third_party/"
+  rsync -a --prune-empty-dirs \
+    --include='*/' \
+    --include='*.gen.h' --include='*.pb.h' --include='*.h' \
+    --exclude='*' \
+    "${srcdir}/build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64/gen/third_party/perfetto" \
     "${_private_chromium_dst}/third_party/"
   rsync -a --prune-empty-dirs \
     --exclude='icu/***' \
