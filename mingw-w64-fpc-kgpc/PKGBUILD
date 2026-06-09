@@ -1,0 +1,142 @@
+# Maintainer: Kreijstal <elektrischrainbow@gmail.com>
+#
+# Free Pascal Compiler 3.2.2 for mingw-w64, bootstrapped WITHOUT an existing FPC.
+#
+# KGPC (a Pascal compiler written in C: https://github.com/Kreijstal/Pascal-Compiler)
+# compiles FPC's own compiler source (pp.pas) into a seed compiler, which then
+# self-cycles a native FPC 3.2.2 ppcx64.exe to a fixpoint (ppc2 == ppc3) and
+# builds the Win64 RTL.  No host fpc is used anywhere in the chain -- the seed
+# is pure C.  The shipped ppcx64.exe is therefore a genuine FPC-built FPC, with
+# KGPC acting only as the initial bootstrap seed.
+#
+# Build inside an MSYS2 MINGW64/UCRT64 shell:
+#     makepkg-mingw -sCf
+
+_realname=fpc
+pkgbase="mingw-w64-${_realname}-kgpc"
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}-kgpc"
+pkgver=3.2.2
+pkgrel=1
+# FPC source git tag (GitLab) and the KGPC release tag used as the bootstrap
+# seed.  KGPC 0.0.7 is the first revision that fully self-cycles win64 FPC 3.2.2
+# to a fixpoint (the FreeAndNil untyped-var pointer-store fix, PR #762).
+_fpctag="release_3_2_2"
+_kgpc_tag="0.0.7"
+pkgdesc="Free Pascal Compiler 3.2.2, bootstrapped from source via KGPC (no host FPC) (mingw-w64)"
+arch=('any')
+mingw_arch=('mingw64' 'ucrt64')
+url="https://github.com/Kreijstal/Pascal-Compiler"
+msys2_repository_url="https://gitlab.com/freepascal.org/fpc/source"
+msys2_references=(
+  'archlinux: fpc'
+)
+license=('spdx:GPL-2.0-or-later' 'spdx:LGPL-2.1-or-later')  # compiler GPL2, RTL LGPL2 + linking exception
+depends=("${MINGW_PACKAGE_PREFIX}-binutils")        # as/ld used by ppcx64 to assemble + link
+makedepends=("${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-meson"
+             "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-pkgconf"
+             "${MINGW_PACKAGE_PREFIX}-gmp")
+options=('!strip' '!debug')   # ppcx64.exe is a self-contained PE; the .ppu/.o units must not be stripped
+source=("fpc-${pkgver}.tar.gz::https://gitlab.com/freepascal.org/fpc/source/-/archive/${_fpctag}/source-${_fpctag}.tar.gz"
+        "kgpc-${_kgpc_tag}.tar.gz::https://github.com/Kreijstal/Pascal-Compiler/archive/refs/tags/${_kgpc_tag}.tar.gz")
+sha256sums=('c15ae8c7b1fd1e6da4194d669d538b833516af3251afca5de5bec50727c3528f'
+            '8b0d9c5d1cf73f622a32d0129eba4eccd1733c6c5d997cff3136e77c0d3258b8')
+
+_fpctarget="x86_64-win64"
+
+prepare() {
+  # Give the two extracted source trees the stable names build()/package() use.
+  cd "${srcdir}"
+  [ -d fpc ]  || mv "source-${_fpctag}"          fpc
+  [ -d kgpc ] || mv "Pascal-Compiler-${_kgpc_tag}" kgpc
+}
+
+build() {
+  # MinGW-w64 toolchain guard: the msys posix gcc is a Cygwin fork and produces
+  # a ppcx64 that faults at startup (argv/entry-info shim), so require _WIN64.
+  if ! "${MINGW_PREFIX}/bin/gcc" -dM -E - </dev/null 2>/dev/null | grep -q "define _WIN64"; then
+    error "Toolchain at ${MINGW_PREFIX}/bin/gcc does not define _WIN64 (not MinGW-w64)."
+    return 1
+  fi
+
+  # --- 1. native KGPC (C) -------------------------------------------------
+  cd "${srcdir}/kgpc"
+  [ -x "_build/KGPC/kgpc.exe" ] || meson setup _build --buildtype=release
+  # kgpc.exe is the compiler; kgpc_runtime is libkgpc_runtime.a, linked into the
+  # KGPC-emitted seed compiler (pp_bootstrap.exe / msg2inc.exe).  Both are needed.
+  meson compile -C _build kgpc kgpc_runtime
+
+  local _kgpc="${srcdir}/kgpc/_build/KGPC/kgpc.exe"
+  local _rtlib="${srcdir}/kgpc/_build/KGPC/libkgpc_runtime.a"
+
+  # KGPC (native-Windows exe) mishandles absolute / forward-slash -Fu paths when
+  # resolving transitively-used units (rtl/charmaps).  RELATIVE paths from a fixed
+  # cwd work -- the same approach the upstream test harness uses.  Keep cwd at
+  # "${srcdir}" for every KGPC invocation and reference the source tree as "fpc/...".
+  cd "${srcdir}"
+  local fpc=fpc
+  local defs=(--no-stdlib -DCPU64 -DCPUX86_64 -Dx86_64 -DFPC -DWINDOWS -DWIN64 -DMSWINDOWS
+    -DFPC_HAS_INDIRECT_ENTRY_INFORMATION -DFPC_HAS_TYPE_EXTENDED -DSUPPORT_EXTENDED
+    -DFPC_BOOTSTRAP_INDIRECT_ENTRY -Sg)
+  local rtlincs=(-I"$fpc/rtl/objpas" -I"$fpc/rtl/objpas/sysutils" -I"$fpc/rtl/objpas/classes"
+    -I"$fpc/rtl/inc" -I"$fpc/rtl/x86_64"
+    -I"$fpc/rtl/win" -I"$fpc/rtl/win/wininc" -I"$fpc/rtl/win64" -I"$fpc/rtl/win64/x86_64")
+  local rtlunits=(-Fu"$fpc/rtl/win" -Fu"$fpc/rtl/win64" -Fu"$fpc/rtl/objpas" -Fu"$fpc/rtl/inc"
+    -Fu"$fpc/rtl/objpas/sysutils" -Fu"$fpc/rtl/objpas/classes" -Fu"$fpc/rtl/charmaps")
+  local incs=("${rtlincs[@]}" -I"$fpc/compiler" -I"$fpc/compiler/x86" -I"$fpc/compiler/x86_64")
+  local units=("${rtlunits[@]}" -Fu"$fpc/compiler" -Fu"$fpc/compiler/x86" -Fu"$fpc/compiler/x86_64" -Fu"$fpc/compiler/systems")
+
+  # --- 2a. generate compiler message includes (msg2inc, KGPC-built) -------
+  # The FPC git source does not ship the generated msgtxt.inc / msgidx.inc.
+  if [ ! -f "$fpc/compiler/msgtxt.inc" ] || [ ! -f "$fpc/compiler/msgidx.inc" ]; then
+    "$_kgpc" "$fpc/compiler/utils/msg2inc.pp" msg2inc.s --emit-link-args \
+      "${defs[@]}" "${rtlincs[@]}" "${rtlunits[@]}" 2>msg2inc.err 1>/dev/null
+    local msglink; msglink=$(sed -n 's/^KGPC_LINK_ARGS://p' msg2inc.err)
+    cc -O2 -o msg2inc.exe msg2inc.s "$_rtlib" -lgmp ${msglink}
+    ( cd "$fpc/compiler" && "${srcdir}/msg2inc.exe" msg/errore.msg msg msg )
+  fi
+
+  # --- 2b. KGPC compiles pp.pas -> seed compiler (pp_bootstrap.exe) -------
+  "$_kgpc" "$fpc/compiler/pp.pas" pp_bootstrap.s --emit-link-args \
+    "${defs[@]}" "${incs[@]}" "${units[@]}" 2>pp_compile.err 1>/dev/null
+  local linkargs; linkargs=$(sed -n 's/^KGPC_LINK_ARGS://p' pp_compile.err)
+  cc -O2 -o pp_bootstrap.exe pp_bootstrap.s "$_rtlib" -lgmp ${linkargs}
+  local ppboot="${srcdir}/pp_bootstrap.exe"
+  "$ppboot" -h >/dev/null 2>&1 || { error "seed compiler pp_bootstrap.exe does not run"; return 1; }
+
+  # --- 3. seed compiler builds the RTL, then self-cycles a native FPC -----
+  # `make compiler cycle` builds ppc1 (with the seed) -> ppc2 (with ppc1) ->
+  # ppc3 (with ppc2) and requires ppc2 == ppc3 (fixpoint) before copying to
+  # ppcx64.exe.  It also builds utils_all, which produces the fpc.exe driver.
+  cd "${srcdir}/${fpc}"
+  make -C rtl clean all FPC="$ppboot" CPU_TARGET=x86_64 OS_TARGET=win64
+  make -C compiler cycle FPC="$ppboot" CPU_TARGET=x86_64 OS_TARGET=win64
+}
+
+package() {
+  local fpc=fpc
+  local _units="${srcdir}/${fpc}/rtl/units/${_fpctarget}"
+  local _bin="${pkgdir}${MINGW_PREFIX}/bin"
+  local _unitdir="${pkgdir}${MINGW_PREFIX}/lib/fpc/${pkgver}/units/${_fpctarget}/rtl"
+
+  install -d "${_bin}" "${_unitdir}"
+  install -m755 "${srcdir}/${fpc}/compiler/ppcx64.exe"      "${_bin}/ppcx64.exe"
+  install -m755 "${srcdir}/${fpc}/compiler/utils/fpc.exe"   "${_bin}/fpc.exe"
+  install -m644 "${_units}"/*.ppu                            "${_unitdir}/"
+  install -m644 "${_units}"/*.o                              "${_unitdir}/"
+
+  # fpc.cfg with absolute install paths (standard for fixed-prefix mingw-w64 pkgs).
+  # ppcx64 auto-reads fpc.cfg from its own directory; -FD lets the driver find ppcx64.
+  local _winprefix; _winprefix="$(cygpath -w "${MINGW_PREFIX}")"
+  local _winprefix_bs="${_winprefix//\//\\}"
+  cat > "${_bin}/fpc.cfg" <<EOF
+# fpc.cfg for KGPC-bootstrapped FPC ${pkgver} (${_fpctarget}) -- generated by PKGBUILD
+-FD${_winprefix_bs}\\bin
+-Fu${_winprefix_bs}\\lib\\fpc\\${pkgver}\\units\\${_fpctarget}\\rtl
+EOF
+
+  install -d "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-kgpc"
+  install -m644 "${srcdir}/${fpc}/rtl/COPYING.FPC" \
+    "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-kgpc/COPYING.FPC"
+}
