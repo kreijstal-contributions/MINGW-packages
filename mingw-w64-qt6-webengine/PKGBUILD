@@ -3,7 +3,7 @@
 _realname=qt6-webengine
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
-pkgver=6.11.0
+pkgver=6.11.1
 pkgrel=1
 pkgdesc='Qt6 WebEngine module (mingw-w64)'
 arch=(any)
@@ -103,8 +103,8 @@ source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/subm
         0125-chromium-d3d12-video-device-mingw.patch
         0126-chromium-mingw-link-followup.patch
         QtSanitizeWebEngineNinja.py)
-sha256sums=('63b921c8b2dd59152ced9a796676010166df044588ee00ef9429dc2fd2146736'
-            'a12ec7469f53f3fceefbb29a82adec0f0b069d0c7b0ae272145a43ba6aa66e8c'
+sha256sums=('679c66ccc6c158fc215e9c58ef160331ecd29974232e345c05161889f8667083'
+            '5649b60ed8b8f5d066e4870c8c3ccf13024204b5613e4a949ff97b309d679276'
             '16221ed5a9414f5c965cd8a5efa6d9ccd2aec88b3d5ef5f8e811546ae7a39927'
             'c9e9ff822ba4c7e76624b655e78a3018989fef9b667b2cc246fe34e1f594976b'
             '3308eb7d4245ada89f7a996d8345301028d8a399ef1e4a4524aac0d9f7081b2a'
@@ -127,13 +127,13 @@ sha256sums=('63b921c8b2dd59152ced9a796676010166df044588ee00ef9429dc2fd2146736'
             '388cfdffa78f6227f3fb0155b52549bc961156c8e88cce4c8a54c2165595c419'
             'ddcf8ff6b3ae6f2ddc1fe2c2398f2c31e45d80a76a36784282fb4319b951fd57'
             '4d6167c67dcefa8156309987f74c21afe1dd92b2b463b9e2a5cd620f2811cd13'
-            '9980139c74556c7145b3b7e92a8fcd8adaec5ec4bc4b8915f55b1527f5849fcc'
+            '746cda436f132b6bd0950333690ea720326763a59ba1c579a205deb73887d691'
             '511c6b3e059ae086e18c43885793119be5e5d14d6037464c8bcd22f46d63c281'
             '263759790b3c3d7a6fcd2332b38226d7b244dff8ab8410fd471a3f5f7b096db3'
             '2476e5b9605e576370d1e278a5a4bd076f6d6ade26e9aac81a4568b6e99c2810'
             '2b346ec92699b20458f3df5733f8792ef75ea824d24782ded211c0ac0258a249'
-            'e66c510464c881bc2cd8db5d8337a5c53217109410be7e6b79d2a1dfa7ec9f37'
-            'b9ff7776ccbbaded11595f52bff8cfc0495510d60940e791a640f4e0fefea44f'
+            '3ecc3ae66ec6d0f7c06a54f6348ed1f60d928cd9e87ffbfdad372bd40951cb0d'
+            'f63a316686ab895a892feee12379fbbc26497bc6b3f141d86f69c6bf06173780'
             '2930aa8ec6709b9b42e1a1eb0c49d42968ef17c149dc58766540e446e1bb603e'
             '6bea17fb13ae8f94ee6daf48e8ac4324b6e52a4898c550f22a08e663047cdb08'
             '27c5e5633cbd44bdc67f959da9626a3f747336acdacbcef525e4e7c9d874de6e'
@@ -298,6 +298,7 @@ build() {
   rsync -a \
     --include='*/' \
     --include='*.h' \
+    --include='*.grd' \
     --include='third_party/devtools-frontend/***' \
     --exclude='*' \
     "${MINGW_PREFIX}/share/qt6-webengine-private/chromium/gen/" \

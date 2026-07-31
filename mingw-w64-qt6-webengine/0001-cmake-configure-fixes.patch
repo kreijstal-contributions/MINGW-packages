@@ -2,16 +2,11 @@ diff --git a/configure.cmake b/configure.cmake
 index 931071f..13e6498 100644
 --- a/configure.cmake
 +++ b/configure.cmake
-@@ -31,7 +31,9 @@ qt_webengine_set_version(libavutil 58.29.100)
- qt_webengine_set_version(libavcodec 60.31.102)
- qt_webengine_set_version(libavformat 60.16.100)
+@@ -34,2 +34,4 @@ qt_webengine_set_version(libavformat 60.16.100)
  qt_webengine_set_version(openh264 2.4.1)
 +if(NOT MINGW)
  qt_webengine_set_version(windows_sdk 26100) # we only care about minor number "10.0.26100.0"
 +endif()
-
- 
- #### find_package checks
 @@ -428,6 +430,8 @@ qt_webengine_configure_check("compiler"
      CONDITION MSVC OR
          (LINUX AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR

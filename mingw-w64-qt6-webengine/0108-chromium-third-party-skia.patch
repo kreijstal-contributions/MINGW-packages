@@ -537,16 +537,15 @@ diff --git a/src/3rdparty/chromium/third_party/skia/modules/skcms/src/Transform_
 index 24a7ac7..f6c4a7b 100644
 --- a/src/3rdparty/chromium/third_party/skia/modules/skcms/src/Transform_inl.h
 +++ b/src/3rdparty/chromium/third_party/skia/modules/skcms/src/Transform_inl.h
-@@ -161,8 +161,7 @@ SI F F_from_Half(U16 half) {
- #elif defined(USING_AVX512F)
-     return (F)_mm512_cvtph_ps((__m256i)half);
- #elif defined(USING_AVX_F16C)
+@@ -165,7 +165,6 @@ SI F F_from_Half(U16 half) {
+     return __builtin_convertvector((F16)half, F);
+ #else
 -    typedef int16_t __attribute__((vector_size(16))) I16;
 -    return __builtin_ia32_vcvtph2ps256((I16)half);
 +    return (F)_mm256_cvtph_ps((__m128i)half);
+ #endif // defined(__clang))
  #else
      U32 wide = cast<U32>(half);
-     // A half is 1-5-10 sign-exponent-mantissa, with 15 exponent bias.
 diff --git a/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h b/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h
 index e52070e..8f8d891 100644
 --- a/src/3rdparty/chromium/third_party/skia/modules/skcms/src/skcms_internals.h

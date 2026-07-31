@@ -47,7 +47,7 @@ index eb83a82..4b3103e 100644
 +    get_property(_qtwebengineLibrariesList
 +        TARGET WebEngineCore PROPERTY LIBS_RSP)
 +    target_link_libraries(WebEngineCore PRIVATE
-+        "$<1:-Wl,--start-group @${_qtwebengineFirstPartyArchiveList} @${_qtwebengineLibrariesList} @${_qtwebengineThirdPartyArchiveList} ${_qtwebengineThirdPartyObjectLibraryNative} -Wl,--end-group>")
++        "$<1:-Wl,--start-group @${_qtwebengineFirstPartyArchiveList} @${_qtwebengineThirdPartyArchiveList} ${_qtwebengineThirdPartyObjectLibraryNative} @${_qtwebengineLibrariesList} -Wl,--end-group>")
 +elseif(DEFINED _qtwebengineThirdPartyObjectLibraryNative)
 +    target_link_libraries(WebEngineCore PRIVATE
 +        "${_qtwebengineThirdPartyObjectLibraryNative}")
@@ -228,7 +228,7 @@ index 40ff99f..56a8148 100644
 +            if(NOT completeStatic)
 +                if(DEFINED QTWEBENGINE_THIRDPARTY_OBJECT_LIBRARY)
 +                    target_link_libraries(${cmakeTarget} PRIVATE
-+                        "$<1:-Wl,--start-group $<$<CONFIG:${config}>:@${archives_rsp}> $<$<CONFIG:${config}>:@${libs_rsp}> ${QTWEBENGINE_THIRDPARTY_OBJECT_LIBRARY} -Wl,--end-group>")
++                        "$<1:-Wl,--start-group $<$<CONFIG:${config}>:@${archives_rsp}> ${QTWEBENGINE_THIRDPARTY_OBJECT_LIBRARY} $<$<CONFIG:${config}>:@${libs_rsp}> -Wl,--end-group>")
 +                else()
 +                    target_link_libraries(${cmakeTarget} PRIVATE
 +                        "$<1:-Wl,--start-group $<$<CONFIG:${config}>:@${archives_rsp}> $<$<CONFIG:${config}>:@${libs_rsp}> -Wl,--end-group>")
