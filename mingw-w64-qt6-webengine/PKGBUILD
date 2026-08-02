@@ -147,7 +147,7 @@ sha256sums=('679c66ccc6c158fc215e9c58ef160331ecd29974232e345c05161889f8667083'
             '58b53bb8e67a42b25c4dc906e3bd7a03384cc9622b65b804c07ead8e6460462a'
             'fcdb3e8692154d408f53625fbaabfa23051be4f1c38eca5c921e3bdeb57d3588'
             'b5fb929bf6ab66c29982a3d6794d12bcad7a5e3988547fa90e37fc9635856263'
-            'f7631555fff1ac3ed7db0493475d73c2c969ba61e3beffe2e93be474e771c08e')
+            'a9d594e9bd723b89bb06fc99dd25e44e8c35e9506697f36c159648e5099c034f')
 
 
 apply_patch_with_msg() {
@@ -217,6 +217,19 @@ prepare() {
   msg2 "Applying 0126-chromium-mingw-link-followup.patch"
   patch -Np1 -i "${srcdir}/0126-chromium-mingw-link-followup.patch"
 
+  # These three land before the third_party tree is swapped in below, because
+  # -thirdparty applies them too: its copy already carries the third_party side
+  # of each, so re-applying afterwards fails as "previously applied".  Patching
+  # first keeps 0117's components/ hunk, which lies outside the swapped tree.
+  msg2 "Applying 0116-chromium-system-flatc-tool.patch"
+  patch -Np1 -i "${srcdir}/0116-chromium-system-flatc-tool.patch"
+
+  msg2 "Applying 0117-chromium-system-protobuf-libs.patch"
+  patch -Np1 -i "${srcdir}/0117-chromium-system-protobuf-libs.patch"
+
+  msg2 "Applying 0118-chromium-system-jsoncpp-lib.patch"
+  patch -Np1 -i "${srcdir}/0118-chromium-system-jsoncpp-lib.patch"
+
   rm -rf src/3rdparty/chromium/third_party
   rsync -a \
     "${MINGW_PREFIX}/share/qt6-webengine-private/chromium/third_party" \
@@ -227,20 +240,23 @@ prepare() {
     "${MINGW_PREFIX}/share/qt6-webengine-private/chromium/v8/include" \
     src/3rdparty/chromium/v8/
 
+  # Subtrees the -thirdparty package supplies in full, i.e. ones this package
+  # compiles nothing unique out of. Dropping their translation units makes
+  # rebuilding them here impossible by construction: a regression in the skip
+  # set surfaces as a hard ninja failure instead of a silently doubled build.
+  # Headers are kept -- consumer-side code still includes them.
+  local _supplied_subtree
+  for _supplied_subtree in v8 cc url gin ipc crypto sql; do
+    find "src/3rdparty/chromium/${_supplied_subtree}" \
+      \( -name '*.cc' -o -name '*.cpp' -o -name '*.mm' \) \
+      -delete
+  done
+
   msg2 "Applying 0114-chromium-private-protoc-tools.patch"
   patch -Np1 -i "${srcdir}/0114-chromium-private-protoc-tools.patch"
 
   msg2 "Applying 0115-chromium-private-brotli-tool.patch"
   patch -Np1 -i "${srcdir}/0115-chromium-private-brotli-tool.patch"
-
-  msg2 "Applying 0116-chromium-system-flatc-tool.patch"
-  patch -Np1 -i "${srcdir}/0116-chromium-system-flatc-tool.patch"
-
-  msg2 "Applying 0117-chromium-system-protobuf-libs.patch"
-  patch -Np1 -i "${srcdir}/0117-chromium-system-protobuf-libs.patch"
-
-  msg2 "Applying 0118-chromium-system-jsoncpp-lib.patch"
-  patch -Np1 -i "${srcdir}/0118-chromium-system-jsoncpp-lib.patch"
 }
 
 build() {
@@ -307,8 +323,11 @@ build() {
   cmake --build build-${MSYSTEM} \
     --target src/core/run_core_NinjaReady \
     --parallel "${NUMBER_OF_PROCESSORS:-2}"
+  # Native Windows python: hand it a mixed path, a bare /ucrt64/... resolves
+  # against the current drive and silently finds nothing.
   python "${srcdir}/QtSanitizeWebEngineNinja.py" \
-    "build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
+    "build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64" \
+    "$(cygpath -m "${MINGW_PREFIX}/lib/qt6-webengine-private")"
 
   local _ninja_dir="build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
   local _private_obj_dir="${MINGW_PREFIX}/lib/qt6-webengine-private/obj"
