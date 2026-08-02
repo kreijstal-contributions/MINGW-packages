@@ -243,7 +243,7 @@ index 40ff99f..56a8148 100644
          # we need libs rsp also when linking process with sandbox lib
          set_property(TARGET ${cmakeTarget} PROPERTY LIBS_RSP ${libs_rsp})
          set_property(TARGET ${cmakeTarget} PROPERTY ARCHIVES_RSP ${archives_rsp})
-@@ -491,21 +599,456 @@ function(add_ninja_command)
+@@ -491,21 +599,473 @@ function(add_ninja_command)
      endif()
      list(TRANSFORM arg_OUTPUT PREPEND "${arg_BUILDDIR}/")
      list(TRANSFORM arg_BYPRODUCTS PREPEND "${arg_BUILDDIR}/")
@@ -476,9 +476,20 @@ index 40ff99f..56a8148 100644
 +set(pch_rules)
 +foreach(ninja_target_file IN LISTS ninja_target_files)
 +    file(READ "${ninja_target_file}" ninja_contents)
++    # The package repair adds one safe aggregate after the generated GN order-
++    # only inputs. Preserve it while stripping those inputs; otherwise cold
++    # object batches race the generated headers the aggregate was created for.
++    string(REGEX REPLACE
++        "(build [^\r\n]+: (cc|cxx|asm|alink) [^\r\n]*) \\|\\|[^\r\n]*qtwebengine_generated_prerequisites[^\r\n]*"
++        "\\1 @qtwebengine_generated_prerequisites@"
++        sanitized_ninja_contents "${ninja_contents}")
 +    string(REGEX REPLACE
 +        "(build [^\r\n]+: (cc|cxx|asm|alink) [^\r\n]*) \\|\\|[^\r\n]*"
-+        "\\1" sanitized_ninja_contents "${ninja_contents}")
++        "\\1" sanitized_ninja_contents "${sanitized_ninja_contents}")
++    string(REPLACE
++        " @qtwebengine_generated_prerequisites@"
++        " || qtwebengine_generated_prerequisites"
++        sanitized_ninja_contents "${sanitized_ninja_contents}")
 +    foreach(private_tool_name IN LISTS private_tool_names)
 +        string(REGEX REPLACE
 +            "(build \\./${private_tool_name} \\./exe\\.unstripped/${private_tool_name}): link [^\r\n]*"
@@ -556,6 +567,12 @@ index 40ff99f..56a8148 100644
 +_qwe_ninja_multipass(
 +    "qtwebengine_resources.pak;qtwebengine_resources_100p.pak;qtwebengine_resources_200p.pak;qtwebengine_devtools_resources.pak"
 +    "WebEngine resource packs")
++# QtRepairWebEngineNinja.py creates this from the first-party generated headers
++# that linked translation units include.  Run it after the broad generator
++# passes above have converged and before any object batch can start.
++_qwe_ninja_multipass(
++    "qtwebengine_generated_prerequisites"
++    "compile generated prerequisites")
 +set(object_targets)
 +set(object_target_batch_size 0)
 +foreach(rsp_line IN LISTS rsp_lines)
