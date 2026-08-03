@@ -11,6 +11,15 @@ index 2a36740..54903a6 100644
  
    # Sets the GUID for the ETW provider
    v8_etw_guid = ""
+@@ -1122,6 +1122,8 @@ disabled_external_cppgc_defines =
+ config("cppgc_header_features") {
+   visibility = [ ":*" ]
+ 
++  include_dirs = [ "include" ]
++
+   if (v8_generate_external_defines_header) {
+     defines = [ "V8_GN_HEADER" ]
+   } else {
 @@ -1559,14 +1559,14 @@ config("toolchain") {
  
    if (v8_current_cpu == "x86") {
