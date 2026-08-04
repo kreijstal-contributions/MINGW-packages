@@ -120,7 +120,7 @@ index 40ff99f..56a8148 100644
 +file(STRINGS "${INPUT}" rsp_lines)
 +file(WRITE "${OUTPUT}" "")
 +foreach(rsp_line IN LISTS rsp_lines)
-+    if(NOT rsp_line MATCHES "(^|/)obj/(.*third_party|net/third_party|skia)/")
++    if(NOT rsp_line MATCHES "(^|/)obj/(.*third_party|net/third_party|skia)/" OR rsp_line MATCHES "(^|/)obj/third_party/blink/renderer/")
 +        file(APPEND "${OUTPUT}" "${rsp_line}\n")
 +    endif()
 +endforeach()
@@ -577,7 +577,7 @@ index 40ff99f..56a8148 100644
 +set(object_target_batch_size 0)
 +foreach(rsp_line IN LISTS rsp_lines)
 +    string(REGEX REPLACE "^\"|\"$" "" object_path "${rsp_line}")
-+    if(NOT object_path MATCHES "(^|/)obj/(.*third_party|net/third_party|skia)/")
++    if(NOT object_path MATCHES "(^|/)obj/(.*third_party|net/third_party|skia)/" OR object_path MATCHES "(^|/)obj/third_party/blink/renderer/")
 +        file(RELATIVE_PATH object_target "${BUILDDIR}" "${object_path}")
 +        if(NOT EXISTS "${BUILDDIR}/${object_target}")
 +            list(APPEND object_targets "${object_target}")
@@ -734,8 +734,8 @@ index 631f77c..ea5a4d1 100644
 +    for (const OutputFile& dep : order_only_deps) {
 +      const std::string& dep_path = dep.value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        filtered_order_only_deps.push_back(dep);
@@ -781,8 +781,8 @@ index b8ba228..f8de3dd 100644
 +    for (const OutputFile& dep : object_files) {
 +      const std::string& dep_path = dep.value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        filtered_object_files.push_back(dep);
@@ -797,8 +797,8 @@ index b8ba228..f8de3dd 100644
 +    for (const OutputFile& dep : classified_deps.extra_object_files) {
 +      const std::string& dep_path = dep.value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        filtered_extra_object_files.push_back(dep);
@@ -818,8 +818,8 @@ index b8ba228..f8de3dd 100644
 +    if (qtwebengine_uses_packaged_thirdparty) {
 +      const std::string& dep_path = cur->link_output_file().value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        // Keep non-private link dependencies in the stamp.
@@ -840,8 +840,8 @@ index b8ba228..f8de3dd 100644
 +    for (const OutputFile& dep : implicit_deps) {
 +      const std::string& dep_path = dep.value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        filtered_implicit_deps.push_back(dep);
@@ -874,8 +874,8 @@ index b8ba228..f8de3dd 100644
 +      const std::string& dep_path = dep.value();
 +      if (!qtwebengine_uses_packaged_thirdparty ||
 +          ((dep_path.find("third_party/") == std::string::npos ||
-+            dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+            dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++            dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++            dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +           dep_path.find("skia/") == std::string::npos &&
 +           dep_path.find("protobuf") == std::string::npos)) {
 +        order_only_deps.push_back(dep);
@@ -914,8 +914,8 @@ index 4f68c22..7ac68ef 100644
 +    for (const OutputFile& dep : outs) {
 +      const std::string& dep_path = dep.value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        filtered_outs.push_back(dep);
@@ -939,8 +939,8 @@ index 4f68c22..7ac68ef 100644
 +    for (const OutputFile& dep : files) {
 +      const std::string& dep_path = dep.value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        filtered_files.push_back(dep);
@@ -958,8 +958,8 @@ index 4f68c22..7ac68ef 100644
 +    for (const OutputFile& dep : order_only_deps) {
 +      const std::string& dep_path = dep.value();
 +      if ((dep_path.find("third_party/") == std::string::npos ||
-+           dep_path.find("gen/third_party/blink/public/mojom/") != std::string::npos ||
-+           dep_path.find("phony/third_party/blink/public/mojom/") != std::string::npos) &&
++           dep_path.find("third_party/blink/renderer/") != std::string::npos ||
++           dep_path.find("third_party/blink/public/mojom/") != std::string::npos) &&
 +          dep_path.find("skia/") == std::string::npos &&
 +          dep_path.find("protobuf") == std::string::npos) {
 +        filtered_order_only_deps.push_back(dep);
