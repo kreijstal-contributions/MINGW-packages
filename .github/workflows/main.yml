@@ -17,10 +17,6 @@ jobs:
         include:
           [
             { msystem: UCRT64, runner: windows-2022 },
-            { msystem: CLANG64, runner: windows-2022 },
-            { msystem: MINGW64, runner: windows-2022 },
-            { msystem: MINGW32, runner: windows-2022 },
-            { msystem: CLANGARM64, runner: windows-11-arm },
           ]
     name: ${{ matrix.msystem }}
     runs-on: ${{ matrix.runner }}
@@ -75,6 +71,16 @@ jobs:
           $path = "${{ steps.facts.outputs.drive }}\_"
           If (Test-Path "$path") { rm -r -fo "$path" }
           Move-Item -Path ".\temp" -Destination "$path"
+
+      - name: Install prebuilt qt6-webengine-thirdparty
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $dir = "${{ steps.facts.outputs.drive }}\tp"
+          gh run download 30916996882 -R kreijstal-contributions/MINGW-packages -n "${{ matrix.msystem }}-packages" -D "$dir"
+          Get-ChildItem "$dir"
+          $drv = "${{ steps.facts.outputs.drive }}".TrimEnd(':').ToLower()
+          msys2 -c "pacman --noconfirm -U /$drv/tp/*.pkg.tar.zst"
 
       - name: CI-Build
         shell: msys2 {0}
