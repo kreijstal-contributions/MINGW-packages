@@ -77,9 +77,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $dir = "${{ steps.facts.outputs.drive }}\tp"
-          $run = gh run list -R kreijstal-contributions/MINGW-packages --branch qt6-webengine-thirdparty-6110 --status success --limit 1 --json databaseId --jq '.[0].databaseId'
-          echo "using producer run $run"
-          gh run download $run -R kreijstal-contributions/MINGW-packages -n "${{ matrix.msystem }}-packages" -D "$dir"
+          $repo = "msys2/MINGW-packages"
+          $run = "31066314245"
+          echo "using producer run $run from $repo"
+          gh run download $run -R $repo -n "${{ matrix.msystem }}-packages" -D "$dir"
           Get-ChildItem "$dir"
           $drv = "${{ steps.facts.outputs.drive }}".TrimEnd(':').ToLower()
           msys2 -c "pacman --noconfirm -U /$drv/tp/*.pkg.tar.zst"
