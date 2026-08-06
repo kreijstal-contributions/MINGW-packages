@@ -90,6 +90,16 @@ jobs:
         id: build
         run: |
           cd "$(cygpath '${{ steps.facts.outputs.drive }}/_')"
+          ( while true; do
+              disk=$(df -m /c /d 2>/dev/null | awk 'NR>1{printf "%s=%sM ", $6, $4}')
+              mem=$(awk '/^MemFree|^MemAvailable|^SwapFree/{printf "%s=%dM ", $1, $2/1024}' /proc/meminfo)
+              procs=$(ps -W 2>/dev/null | wc -l)
+              cc=$(ps -W 2>/dev/null | grep -ci 'cc1plus\|clang' || true)
+              echo "RESMON $(date -u +%H:%M:%S) $disk$mem procs=$procs cc=$cc"
+              sleep 20
+            done ) &
+          _resmon=$!
+          trap 'kill $_resmon 2>/dev/null || true' EXIT
           MINGW_ARCH=${{ matrix.msystem }} ./.ci/ci-build.sh
 
       - name: "Upload binaries"
