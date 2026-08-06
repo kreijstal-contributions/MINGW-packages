@@ -245,15 +245,18 @@ prepare() {
     src/3rdparty/chromium/v8/
 
   # Subtrees the -thirdparty package supplies in full, i.e. ones this package
-  # compiles nothing unique out of. Dropping their translation units makes
-  # rebuilding them here impossible by construction: a regression in the skip
-  # set surfaces as a hard ninja failure instead of a silently doubled build.
+  # compiles nothing unique out of.  Emptying their translation units keeps the
+  # compile cost at zero while leaving the files in place; the archives rsp
+  # filter drops the resulting empty archives in favour of the packaged ones.
+  # They cannot simply be deleted: asking ninja for a first-party archive pulls
+  # that archive's order-only dependency stamps, so ninja descends into these
+  # subtrees and fails the graph load on the missing sources.
   # Headers are kept -- consumer-side code still includes them.
   local _supplied_subtree
   for _supplied_subtree in v8 cc url gin ipc crypto sql; do
     find "src/3rdparty/chromium/${_supplied_subtree}" \
       \( -name '*.cc' -o -name '*.cpp' -o -name '*.mm' \) \
-      -delete
+      -exec truncate -s 0 {} +
   done
 
   msg2 "Applying 0114-chromium-private-protoc-tools.patch"
