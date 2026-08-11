@@ -13,6 +13,7 @@ msys2_repository_url="https://github.com/leanprover/lean4"
 license=('spdx:Apache-2.0')
 depends=("${MINGW_PACKAGE_PREFIX}-clang"
          "${MINGW_PACKAGE_PREFIX}-gmp"
+         "${MINGW_PACKAGE_PREFIX}-libc++"
          "${MINGW_PACKAGE_PREFIX}-libuv"
          "${MINGW_PACKAGE_PREFIX}-openssl")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
@@ -99,6 +100,7 @@ build() {
     -DCADICAL="${_cadical}" \
     -DLEANTAR="${_leantar}" \
     -DINSTALL_LICENSE=OFF \
+    -DLEAN_CXX_STDLIB='-lc++ -lc++abi' \
     -DSTRIP_BINARIES=OFF \
     -DUSE_GITHASH=OFF \
     -DUSE_MIMALLOC=OFF \
