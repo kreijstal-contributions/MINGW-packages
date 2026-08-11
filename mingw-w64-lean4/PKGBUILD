@@ -121,7 +121,15 @@ check() {
 package() {
   local _lean_src="${srcdir}/${_realname}-${pkgver}"
 
-  DESTDIR="${pkgdir}" cmake --install "${srcdir}/build-${MSYSTEM}"
+  DESTDIR="${pkgdir}" make -C "${srcdir}/build-${MSYSTEM}/stage1" install
+
+  local _binary
+  for _binary in lean lake leanc; do
+    if [[ ! -x "${pkgdir}${MINGW_PREFIX}/bin/${_binary}.exe" ]]; then
+      echo "Missing installed ${_binary}.exe" >&2
+      return 1
+    fi
+  done
 
   install -Dm644 "${_lean_src}/LICENSE" \
     "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
