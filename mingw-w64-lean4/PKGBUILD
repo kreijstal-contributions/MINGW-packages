@@ -90,7 +90,9 @@ build() {
     LDFLAGS="${LDFLAGS}"
 
   rm -rf "${_build_dir}"
-  MSYS2_ARG_CONV_EXCL='-DCMAKE_INSTALL_PREFIX=' \
+  # The bootstrap does not forward the top-level install prefix automatically.
+  # Keep the explicit stage1 /clang64 prefix unconverted so DESTDIR can prepend it.
+  export MSYS2_ARG_CONV_EXCL='-DCMAKE_INSTALL_PREFIX='
   cmake \
     -G 'Unix Makefiles' \
     -DCMAKE_BUILD_TYPE=Release \
@@ -101,6 +103,7 @@ build() {
     -DLEANTAR="${_leantar}" \
     -DINSTALL_LICENSE=OFF \
     -DLEAN_CXX_STDLIB='-lc++ -lc++abi' \
+    -DSTAGE1_CMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
     -DSTRIP_BINARIES=OFF \
     -DUSE_GITHASH=OFF \
     -DUSE_MIMALLOC=OFF \
