@@ -126,8 +126,10 @@ check() {
 package() {
   local _lean_src="${srcdir}/${_realname}-${pkgver}"
 
-  DESTDIR="$(cygpath -m "${pkgdir}")" \
-    make -C "${srcdir}/build-${MSYSTEM}/stage1" install
+  # Install stage1 directly with a native staging prefix. The top-level install
+  # delegates through a relative stage1 path and cannot override this prefix.
+  cmake --install "$(cygpath -m "${srcdir}/build-${MSYSTEM}/stage1")" \
+    --prefix "$(cygpath -m "${pkgdir}${MINGW_PREFIX}")"
 
   local _binary
   for _binary in lean lake leanc leanchecker leanir cadical leantar; do
