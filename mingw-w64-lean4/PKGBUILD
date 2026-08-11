@@ -32,8 +32,37 @@ source=("${_realname}-${pkgver}.tar.gz::https://github.com/leanprover/lean4/arch
 sha256sums=('348d0839049a7cbb72b5e82196670e4ded6e1f8ec4610cd6c5188b2754a1f24c'
             '292c2bb8d712d6d05fce3d3df63b922b8fa45e03974a79f7bae5bf68c284f131'
             '7bb21a0a8d152da25863ad53039edddf5fd656b9d7be298b221f4565027f8cc7')
+noextract=("${_realname}-${pkgver}.tar.gz")
 
 prepare() {
+  local _lean_src="${srcdir}/${_realname}-${pkgver}"
+
+  # GitHub's archive contains symlinks, which cannot be created on the hosted
+  # Windows runners. Extract everything else and materialise the links as files.
+  rm -rf "${_lean_src}"
+  bsdtar -xf "${srcdir}/${_realname}-${pkgver}.tar.gz" -C "${srcdir}" \
+    --exclude="${_realname}-${pkgver}/AGENTS.md" \
+    --exclude="${_realname}-${pkgver}/tests/bench/build/fake_root/bin/lean" \
+    --exclude="${_realname}-${pkgver}/tests/compile_bench/rbmap_checkpoint2.lean" \
+    --exclude="${_realname}-${pkgver}/tests/compile_bench/run_test.sh" \
+    --exclude="${_realname}-${pkgver}/tests/elab_bench/big_omega_MT.lean" \
+    --exclude="${_realname}-${pkgver}/tests/elab_bench/iterators.lean" \
+    --exclude="${_realname}-${pkgver}/tests/elab_bench/run_test.sh"
+
+  cp -a "${_lean_src}/.claude/CLAUDE.md" "${_lean_src}/AGENTS.md"
+  cp -a "${_lean_src}/tests/bench/build/lean_wrapper.py" \
+    "${_lean_src}/tests/bench/build/fake_root/bin/lean"
+  cp -a "${_lean_src}/tests/compile_bench/rbmap_checkpoint.lean" \
+    "${_lean_src}/tests/compile_bench/rbmap_checkpoint2.lean"
+  cp -a "${_lean_src}/tests/compile/run_test.sh" \
+    "${_lean_src}/tests/compile_bench/run_test.sh"
+  cp -a "${_lean_src}/tests/elab_bench/big_omega.lean" \
+    "${_lean_src}/tests/elab_bench/big_omega_MT.lean"
+  cp -a "${_lean_src}/tests/compile_bench/iterators.lean" \
+    "${_lean_src}/tests/elab_bench/iterators.lean"
+  cp -a "${_lean_src}/tests/elab/run_test.sh" \
+    "${_lean_src}/tests/elab_bench/run_test.sh"
+
   rm -rf "${srcdir}/cadical-work"
   install -d "${srcdir}/cadical-work/src"
   cp -a "${srcdir}/cadical-rel-${_cadical_ver}" \
