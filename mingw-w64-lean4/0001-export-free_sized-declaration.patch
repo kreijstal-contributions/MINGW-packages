@@ -1,0 +1,14 @@
+diff --git a/src/include/lean/lean.h b/src/include/lean/lean.h
+index 57caf467e..946f329cb 100644
+--- a/src/include/lean/lean.h
++++ b/src/include/lean/lean.h
+@@ -467 +467 @@
+-void free_sized(void* ptr, size_t);
++LEAN_EXPORT void free_sized(void* ptr, size_t);
+diff --git a/stage0/src/include/lean/lean.h b/stage0/src/include/lean/lean.h
+index 57caf467e..946f329cb 100644
+--- a/stage0/src/include/lean/lean.h
++++ b/stage0/src/include/lean/lean.h
+@@ -467 +467 @@
+-void free_sized(void* ptr, size_t);
++LEAN_EXPORT void free_sized(void* ptr, size_t);
