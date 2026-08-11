@@ -1,0 +1,96 @@
+# Contributor: Kreijstal <elektrischrainbow@gmail.com>
+
+_realname=lean4
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=4.33.0
+pkgrel=1
+pkgdesc="Functional programming language and theorem prover (mingw-w64)"
+arch=('any')
+mingw_arch=('clang64')
+url="https://lean-lang.org"
+msys2_repository_url="https://github.com/leanprover/lean4"
+license=('spdx:Apache-2.0')
+depends=("${MINGW_PACKAGE_PREFIX}-clang"
+         "${MINGW_PACKAGE_PREFIX}-gmp"
+         "${MINGW_PACKAGE_PREFIX}-libuv"
+         "${MINGW_PACKAGE_PREFIX}-openssl")
+makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+             "${MINGW_PACKAGE_PREFIX}-ccache"
+             'binutils'
+             'diffutils'
+             'git'
+             'make'
+             'python')
+optdepends=('git: fetch Lake package dependencies')
+options=('!lto')
+_cadical_ver=2.1.2
+_leantar_ver=0.1.20
+source=("${_realname}-${pkgver}.tar.gz::https://github.com/leanprover/lean4/archive/refs/tags/v${pkgver}.tar.gz"
+        "cadical-${_cadical_ver}.tar.gz::https://github.com/arminbiere/cadical/archive/refs/tags/rel-${_cadical_ver}.tar.gz"
+        "https://github.com/digama0/leangz/releases/download/v${_leantar_ver}/leantar-v${_leantar_ver}-x86_64-pc-windows-msvc.zip")
+sha256sums=('348d0839049a7cbb72b5e82196670e4ded6e1f8ec4610cd6c5188b2754a1f24c'
+            '292c2bb8d712d6d05fce3d3df63b922b8fa45e03974a79f7bae5bf68c284f131'
+            '7bb21a0a8d152da25863ad53039edddf5fd656b9d7be298b221f4565027f8cc7')
+
+prepare() {
+  rm -rf "${srcdir}/cadical-work"
+  install -d "${srcdir}/cadical-work/src"
+  cp -a "${srcdir}/cadical-rel-${_cadical_ver}" \
+    "${srcdir}/cadical-work/src/cadical"
+}
+
+build() {
+  local _lean_src="${srcdir}/${_realname}-${pkgver}"
+  local _cadical_src="${srcdir}/cadical-work/src/cadical"
+  local _cadical="${srcdir}/cadical-work/cadical.exe"
+  local _leantar="${srcdir}/leantar-v${_leantar_ver}-x86_64-pc-windows-msvc/leantar.exe"
+  local _build_dir="${srcdir}/build-${MSYSTEM}"
+
+  make -C "${_cadical_src}" \
+    -f "${_lean_src}/src/cadical.mk" \
+    CMAKE_EXECUTABLE_SUFFIX='.exe' \
+    CXX="${CXX}" \
+    CXXFLAGS="${CXXFLAGS} -DNUNLOCKED -DNCLOSEFROM" \
+    LDFLAGS="${LDFLAGS}"
+
+  rm -rf "${_build_dir}"
+  MSYS2_ARG_CONV_EXCL='-DCMAKE_INSTALL_PREFIX=' \
+  cmake \
+    -G 'Unix Makefiles' \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
+    -DCMAKE_C_COMPILER="${CC}" \
+    -DCMAKE_CXX_COMPILER="${CXX}" \
+    -DCADICAL="${_cadical}" \
+    -DLEANTAR="${_leantar}" \
+    -DINSTALL_LICENSE=OFF \
+    -DSTRIP_BINARIES=OFF \
+    -DUSE_GITHASH=OFF \
+    -DUSE_MIMALLOC=OFF \
+    -S "${_lean_src}" \
+    -B "${_build_dir}"
+
+  cmake --build "${_build_dir}" --parallel "${NUMBER_OF_PROCESSORS:-2}"
+}
+
+check() {
+  local _lean="${srcdir}/build-${MSYSTEM}/stage1/bin/lean.exe"
+  local _lake="${srcdir}/build-${MSYSTEM}/stage1/bin/lake.exe"
+
+  "${_lean}" --version
+  "${_lake}" --version
+  printf '#eval 1 + 1\n' > "${srcdir}/lean-smoke-test.lean"
+  "${_lean}" "${srcdir}/lean-smoke-test.lean"
+}
+
+package() {
+  local _lean_src="${srcdir}/${_realname}-${pkgver}"
+
+  DESTDIR="${pkgdir}" cmake --install "${srcdir}/build-${MSYSTEM}"
+
+  install -Dm644 "${_lean_src}/LICENSE" \
+    "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
+  install -Dm644 "${_lean_src}/LICENSES" \
+    "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSES"
+}
