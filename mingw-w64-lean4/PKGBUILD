@@ -125,12 +125,37 @@ package() {
     make -C "${srcdir}/build-${MSYSTEM}/stage1" install
 
   local _binary
-  for _binary in lean lake leanc; do
+  for _binary in lean lake leanc leanchecker leanir cadical leantar; do
     if [[ ! -x "${pkgdir}${MINGW_PREFIX}/bin/${_binary}.exe" ]]; then
       echo "Missing installed ${_binary}.exe" >&2
       return 1
     fi
   done
+
+  local _directory
+  for _directory in include lib/lean share/lean src/lean; do
+    if [[ ! -d "${pkgdir}${MINGW_PREFIX}/${_directory}" ]]; then
+      echo "Missing installed ${_directory} directory" >&2
+      return 1
+    fi
+  done
+
+  local _file
+  for _file in include/lean/lean.h lib/lean/Init.olean share/lean/lean.mk; do
+    if [[ ! -f "${pkgdir}${MINGW_PREFIX}/${_file}" ]]; then
+      echo "Missing installed ${_file}" >&2
+      return 1
+    fi
+  done
+
+  PATH="${pkgdir}${MINGW_PREFIX}/bin:${PATH}" \
+    "${pkgdir}${MINGW_PREFIX}/bin/lean.exe" --version
+  PATH="${pkgdir}${MINGW_PREFIX}/bin:${PATH}" \
+    "${pkgdir}${MINGW_PREFIX}/bin/lake.exe" --version
+  printf '#eval 1 + 1\n' > "${srcdir}/lean-installed-smoke-test.lean"
+  PATH="${pkgdir}${MINGW_PREFIX}/bin:${PATH}" \
+    "${pkgdir}${MINGW_PREFIX}/bin/lean.exe" \
+    "${srcdir}/lean-installed-smoke-test.lean"
 
   install -Dm644 "${_lean_src}/LICENSE" \
     "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}/LICENSE"
