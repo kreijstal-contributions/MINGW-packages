@@ -121,7 +121,8 @@ check() {
 package() {
   local _lean_src="${srcdir}/${_realname}-${pkgver}"
 
-  DESTDIR="${pkgdir}" make -C "${srcdir}/build-${MSYSTEM}/stage1" install
+  DESTDIR="$(cygpath -m "${pkgdir}")" \
+    make -C "${srcdir}/build-${MSYSTEM}/stage1" install
 
   local _binary
   for _binary in lean lake leanc; do
