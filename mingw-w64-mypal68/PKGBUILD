@@ -5,6 +5,7 @@ pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
 pkgver=78.0.2
 pkgrel=1
+_rust_overlay="mypal68-rust-overlay-${pkgver}.tar.xz"
 pkgdesc="Mypal 68 web browser for Windows XP and later (mingw-w64)"
 arch=('any')
 mingw_arch=('ucrt64' 'clang64')
@@ -49,10 +50,12 @@ _patches=(
 source=(
   "Mypal68-${pkgver}.tar.gz::https://github.com/Feodor2/Mypal68/archive/refs/tags/${pkgver}.tar.gz"
   "${_patches[@]}"
+  'rust-vendor-prune.list'
+  "${_rust_overlay}"
 )
 sha256sums=(
   '0a2bb9bd6fca767c70afa9d6a584a0b71bb48e4a66f2d3885a598bf425699c4c'
-  '5395ce107cc7b591db6d78820c4c0e521f944e436b9bc9b989f87886247dec14'
+  'a2cbfbd039edbfd5d3b2044b7adab0814a8987d9d8bd0eb7b10772fbd4273ef9'
   '5383d2698a824c37e601ee193dbf6a5662dfe0ce552ccd2241efcba0b151bd5d'
   'ee9bed298adda7478c048ace2a998876352f2e7e8d457cd84ec0527fb2cc1bab'
   '571de93a9c8443621a6fdff67542027495856409a05d895413d3cf84de5c7f1f'
@@ -61,13 +64,32 @@ sha256sums=(
   '203e700cfa754346d5fcfbde0a3f894e11fcfa4b9cbc0abfe602649f39b44373'
   'f40d047811613fa43a9b082165fc4cdc654ae5e7790acfe9766fd2ea0ad9bb9b'
   'd204985c28e0f15b4d94902bf4093c684f3e44d6ecb9c511c7eccb9989decfc4'
+  '28a1b66844e92649af445481461c2059a5bb3e6dff7edb9369407ff9ae90caa7'
+  '2b2b75df8d1c76c99257890670323b1ff12876bf2326197783058c8dd22fa0a7'
 )
 
 prepare() {
   cd "${srcdir}/Mypal68-${pkgver}"
 
-  for patch in "${srcdir}"/*.patch; do
-    patch --binary -Np1 --forward --ignore-whitespace -i "${patch}"
+  patch --binary -Np1 --forward --ignore-whitespace \
+    -i "${srcdir}/${_patches[0]}"
+
+  while IFS= read -r path; do
+    case "${path}" in
+      ''|'#'*) continue ;;
+      third_party/rust/*) rm -rf -- "${path}" ;;
+      *)
+        echo "Invalid Rust vendor prune path: ${path}" >&2
+        return 1
+        ;;
+    esac
+  done < "${srcdir}/rust-vendor-prune.list"
+
+  bsdtar -xf "${srcdir}/${_rust_overlay}" -C .
+
+  for patch in "${_patches[@]:1}"; do
+    patch --binary -Np1 --forward --ignore-whitespace \
+      -i "${srcdir}/${patch}"
   done
 
   # Some vendored Rust crates reference binary/test artifacts that are
@@ -106,18 +128,19 @@ prepare() {
 build() {
   cd "${srcdir}/Mypal68-${pkgver}"
 
-  export CC=cc
-  export CXX=c++
-  export AR=ar
+  export CC="${MINGW_PREFIX}/bin/cc"
+  export CXX="${MINGW_PREFIX}/bin/c++"
+  export AR="${MINGW_PREFIX}/bin/ar"
   local _windres="${MINGW_PREFIX}/bin/windres"
   if [[ ${MINGW_PACKAGE_PREFIX} == mingw-w64-clang-* ]]; then
     _windres="${MINGW_PREFIX}/bin/llvm-windres"
   fi
 
   export RC="${_windres}"
-  export RANLIB=ranlib
+  export RANLIB="${MINGW_PREFIX}/bin/ranlib"
   export WINDRES="${_windres}"
   export NODEJS="${MINGW_PREFIX}/bin/node"
+  export PYTHON="/usr/bin/python3"
   export CARGO_NET_GIT_FETCH_WITH_CLI=true
   export PATH="/usr/bin:${MINGW_PREFIX}/bin:${PATH}"
   export MOZCONFIG="${srcdir}/mypal68-ucrt64.mozconfig"
@@ -134,8 +157,8 @@ ac_add_options --with-libclang-path=${MINGW_PREFIX}/bin
 ac_add_options --enable-nodejs
 EOF
 
-  ./mach configure
-  ./mach build
+  "${PYTHON}" ./mach configure
+  "${PYTHON}" ./mach build
 }
 
 package() {
