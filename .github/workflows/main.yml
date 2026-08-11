@@ -63,6 +63,9 @@ jobs:
         shell: msys2 {0}
         run: |
           cp /etc/pacman.conf /etc/pacman.conf.bak
+          # This branch builds binaries for msys2-ur only. Upstream PRs must not
+          # depend on this repository; qt6-webengine-thirdparty lands there first.
+          sed -i '1s|^|[msys2ur]\nServer = https://github.com/Kreijstal/msys2-ur/releases/download/x11-shared-20260731\nSigLevel = Optional TrustAll\n\n|' /etc/pacman.conf
           grep -qFx '[staging]' /etc/pacman.conf || sed -i '/^# \[staging\]/,/^$/ s|^# ||g' /etc/pacman.conf
 
       - name: Update using staging
