@@ -52,7 +52,7 @@ source=("${_realname}-${pkgver}.tar.gz::https://github.com/leanprover/lean4/arch
 sha256sums=('348d0839049a7cbb72b5e82196670e4ded6e1f8ec4610cd6c5188b2754a1f24c'
             '292c2bb8d712d6d05fce3d3df63b922b8fa45e03974a79f7bae5bf68c284f131'
             '7bb21a0a8d152da25863ad53039edddf5fd656b9d7be298b221f4565027f8cc7'
-            '0274546d2b726b50b64e989ca56eea8bf848253c0daa19e099d2dd0b16a71329')
+            '7b1b3e70a02ec85c4a3886c6c14163356bc8d54d97e24a9e76b4572a04ddd15f')
 noextract=("${_realname}-${pkgver}.tar.gz")
 
 prepare() {
