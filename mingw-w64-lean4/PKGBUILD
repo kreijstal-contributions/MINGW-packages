@@ -7,22 +7,40 @@ pkgver=4.33.0
 pkgrel=1
 pkgdesc="Functional programming language and theorem prover (mingw-w64)"
 arch=('any')
-mingw_arch=('clang64')
+mingw_arch=('ucrt64' 'clang64')
 url="https://lean-lang.org"
 msys2_repository_url="https://github.com/leanprover/lean4"
 license=('spdx:Apache-2.0')
-depends=("${MINGW_PACKAGE_PREFIX}-clang"
-         "${MINGW_PACKAGE_PREFIX}-gmp"
-         "${MINGW_PACKAGE_PREFIX}-libc++"
-         "${MINGW_PACKAGE_PREFIX}-libuv"
-         "${MINGW_PACKAGE_PREFIX}-openssl")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
-             "${MINGW_PACKAGE_PREFIX}-ccache"
-             'binutils'
-             'diffutils'
-             'git'
-             'make'
-             'python')
+if [[ ${MSYSTEM} == CLANG64 ]]; then
+  LEAN_CXX_STDLIB='-lc++ -lc++abi'
+  depends=("${MINGW_PACKAGE_PREFIX}-clang"
+           "${MINGW_PACKAGE_PREFIX}-gmp"
+           "${MINGW_PACKAGE_PREFIX}-libc++"
+           "${MINGW_PACKAGE_PREFIX}-libuv"
+           "${MINGW_PACKAGE_PREFIX}-openssl")
+  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+               "${MINGW_PACKAGE_PREFIX}-ccache"
+               'binutils'
+               'diffutils'
+               'git'
+               'make'
+               'python')
+else
+  LEAN_CXX_STDLIB='-lstdc++'
+  # leanc invokes the C++ compiler when building Lean executables, so GCC is a
+  # runtime dependency rather than only a build dependency.
+  depends=("${MINGW_PACKAGE_PREFIX}-gcc"
+           "${MINGW_PACKAGE_PREFIX}-gmp"
+           "${MINGW_PACKAGE_PREFIX}-libuv"
+           "${MINGW_PACKAGE_PREFIX}-openssl")
+  makedepends=("${MINGW_PACKAGE_PREFIX}-cmake"
+               "${MINGW_PACKAGE_PREFIX}-ccache"
+               'binutils'
+               'diffutils'
+               'git'
+               'make'
+               'python')
+fi
 optdepends=('git: fetch Lake package dependencies')
 options=('!lto')
 _cadical_ver=2.1.2
@@ -91,7 +109,7 @@ build() {
 
   rm -rf "${_build_dir}"
   # The bootstrap does not forward the top-level install prefix automatically.
-  # Keep the explicit stage1 /clang64 prefix unconverted so DESTDIR can prepend it.
+  # Keep the explicit stage1 prefix unconverted so DESTDIR can prepend it.
   export MSYS2_ARG_CONV_EXCL='-DCMAKE_INSTALL_PREFIX='
   cmake \
     -G 'Unix Makefiles' \
@@ -102,7 +120,7 @@ build() {
     -DCADICAL="${_cadical}" \
     -DLEANTAR="${_leantar}" \
     -DINSTALL_LICENSE=OFF \
-    -DLEAN_CXX_STDLIB='-lc++ -lc++abi' \
+    -DLEAN_CXX_STDLIB="${LEAN_CXX_STDLIB}" \
     -DSTAGE1_CMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
     -DSTRIP_BINARIES=OFF \
     -DUSE_GITHASH=OFF \
