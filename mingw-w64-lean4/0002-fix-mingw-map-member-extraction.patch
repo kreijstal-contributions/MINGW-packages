@@ -1,0 +1,64 @@
+From 5d5263d896093797f0c90f4c91877879532540ed Mon Sep 17 00:00:00 2001
+From: Kreijstal <elektrischrainbow@gmail.com>
+Date: Wed, 12 Aug 2026 15:40:00 +0200
+Subject: [PATCH] Fix MinGW linker map member extraction
+
+Current GNU ld map files write archive members inside parentheses rather than
+followed by a colon. Match that form so the Windows shared-library split
+actually removes members already consumed by the first two DLLs. Fail early
+if the linker map format changes again.
+---
+ src/stdlib.make.in        | 8 ++++++--
+ stage0/src/stdlib.make.in | 8 ++++++--
+ 2 files changed, 12 insertions(+), 4 deletions(-)
+
+--- a/src/stdlib.make.in
++++ b/src/stdlib.make.in
+@@ -132,7 +132,9 @@
+ 	nm $(OUTLIB)/libleanshared_1$(SO) --extern-only | wc -l
+ # now delete included symbols from libLean.a
+ 	cp ${LIB}/lean/libLean.a.export ${LIB}/lean/diff.a
+-	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
++	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
++	test -s ${LIB}/temp/diff.a.in || \
++	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
+ # can't use bundled llvm-ar before LLVM 16, https://github.com/llvm/llvm-project/issues/55023
+ 	ar dP ${LIB}/lean/diff.a @${LIB}/temp/diff.a.in
+ 	#"${CMAKE_AR}" tP ${LIB}/lean/diff.a
+@@ -141,7 +143,9 @@
+ 	  ${LIB}/lean/../temp/Lean/Meta.*o.export ${LIB}/lean/diff.a -Wl,--no-whole-archive -lleanshared_1 -lInit_shared -Wl,--out-implib,${LIB}/lean/libleanshared_2.dll.a ${LEANSHARED_LINKER_FLAGS} ${TOOLCHAIN_SHARED_LINKER_FLAGS} ${LEANC_OPTS} -Wl,-Map=${LIB}/temp/libleanshared_2.map
+ 	echo -n "$(OUTLIB)/libleanshared_2$(SO) symbols: "
+ 	nm $(OUTLIB)/libleanshared_2$(SO) --extern-only | wc -l
+-	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
++	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
++	test -s ${LIB}/temp/diff.a.in || \
++	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
+ 	ar dP ${LIB}/lean/diff.a @${LIB}/temp/diff.a.in
+ 	#"${CMAKE_AR}" tP ${LIB}/lean/diff.a
+ # now include `Lean` and the diff library in `leanshared`
+--- a/stage0/src/stdlib.make.in
++++ b/stage0/src/stdlib.make.in
+@@ -132,7 +132,9 @@
+ 	nm $(OUTLIB)/libleanshared_1$(SO) --extern-only | wc -l
+ # now delete included symbols from libLean.a
+ 	cp ${LIB}/lean/libLean.a.export ${LIB}/lean/diff.a
+-	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
++	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
++	test -s ${LIB}/temp/diff.a.in || \
++	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
+ # can't use bundled llvm-ar before LLVM 16, https://github.com/llvm/llvm-project/issues/55023
+ 	ar dP ${LIB}/lean/diff.a @${LIB}/temp/diff.a.in
+ 	#"${CMAKE_AR}" tP ${LIB}/lean/diff.a
+@@ -141,7 +143,9 @@
+ 	  ${LIB}/lean/../temp/Lean/Meta.*o.export ${LIB}/lean/diff.a -Wl,--no-whole-archive -lleanshared_1 -lInit_shared -Wl,--out-implib,${LIB}/lean/libleanshared_2.dll.a ${LEANSHARED_LINKER_FLAGS} ${TOOLCHAIN_SHARED_LINKER_FLAGS} ${LEANC_OPTS} -Wl,-Map=${LIB}/temp/libleanshared_2.map
+ 	echo -n "$(OUTLIB)/libleanshared_2$(SO) symbols: "
+ 	nm $(OUTLIB)/libleanshared_2$(SO) --extern-only | wc -l
+-	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
++	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
++	test -s ${LIB}/temp/diff.a.in || \
++	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
+ 	ar dP ${LIB}/lean/diff.a @${LIB}/temp/diff.a.in
+ 	#"${CMAKE_AR}" tP ${LIB}/lean/diff.a
+ # now include `Lean` and the diff library in `leanshared`
+--
+2.51.0

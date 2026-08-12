@@ -51,11 +51,13 @@ _leantar_ver=0.1.20
 source=("${_realname}-${pkgver}.tar.gz::https://github.com/leanprover/lean4/archive/refs/tags/v${pkgver}.tar.gz"
         "cadical-${_cadical_ver}.tar.gz::https://github.com/arminbiere/cadical/archive/refs/tags/rel-${_cadical_ver}.tar.gz"
         "https://github.com/digama0/leangz/releases/download/v${_leantar_ver}/leantar-v${_leantar_ver}-x86_64-pc-windows-msvc.zip"
-        '0001-export-free_sized-declaration.patch')
+        '0001-export-free_sized-declaration.patch'
+        '0002-fix-mingw-map-member-extraction.patch')
 sha256sums=('348d0839049a7cbb72b5e82196670e4ded6e1f8ec4610cd6c5188b2754a1f24c'
             '292c2bb8d712d6d05fce3d3df63b922b8fa45e03974a79f7bae5bf68c284f131'
             '7bb21a0a8d152da25863ad53039edddf5fd656b9d7be298b221f4565027f8cc7'
-            '7b1b3e70a02ec85c4a3886c6c14163356bc8d54d97e24a9e76b4572a04ddd15f')
+            '7b1b3e70a02ec85c4a3886c6c14163356bc8d54d97e24a9e76b4572a04ddd15f'
+            '2e85d00f3156b38d2d0831987a4a1718c2d8c7b2a43ba159c3f2d1cd64448e9a')
 noextract=("${_realname}-${pkgver}.tar.gz")
 
 prepare() {
@@ -75,6 +77,8 @@ prepare() {
 
   patch -d "${_lean_src}" -Np1 \
     -i "${srcdir}/0001-export-free_sized-declaration.patch"
+  patch -d "${_lean_src}" -Np1 \
+    -i "${srcdir}/0002-fix-mingw-map-member-extraction.patch"
 
   cp -a "${_lean_src}/.claude/CLAUDE.md" "${_lean_src}/AGENTS.md"
   cp -a "${_lean_src}/tests/bench/build/lean_wrapper.py" \
