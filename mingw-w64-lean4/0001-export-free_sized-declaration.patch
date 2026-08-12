@@ -1,14 +1,94 @@
-diff --git a/src/include/lean/lean.h b/src/include/lean/lean.h
-index 57caf467e..946f329cb 100644
 --- a/src/include/lean/lean.h
 +++ b/src/include/lean/lean.h
-@@ -467 +467 @@
+@@ -79,6 +79,17 @@
+ #define LEAN_EXPORT
+ #endif
+
++// GNU ld for MinGW cannot export a weak COFF symbol. `free_sized` is a
++// fallback implementation, so make it a regular, private definition there.
++// Clang needs the declaration and definition to carry `dllexport` consistently.
++#if defined(__MINGW32__) && !defined(__clang__)
++#define LEAN_FREE_SIZED_EXPORT
++#define LEAN_FREE_SIZED_WEAK
++#else
++#define LEAN_FREE_SIZED_EXPORT LEAN_EXPORT
++#define LEAN_FREE_SIZED_WEAK __attribute__((weak))
++#endif
++
+ // `FLT_EVAL_METHOD` is mandated to exist by the standard since C++11 and C99, but if we're in danger of triggering this
+ // error, all bets are probably off and we should check whether it exists to avoid falling back to `0`.
+ // We also perform this check in `lean.h` rather than in one of the runtime files because it is only valid per translation
+@@ -464,7 +475,7 @@
+ // `__attribute__((nothrow))` to be present or `noexcept`.
+ __attribute__((nothrow))
+ #endif
 -void free_sized(void* ptr, size_t);
-+LEAN_EXPORT void free_sized(void* ptr, size_t);
-diff --git a/stage0/src/include/lean/lean.h b/stage0/src/include/lean/lean.h
-index 57caf467e..946f329cb 100644
++LEAN_FREE_SIZED_EXPORT void free_sized(void* ptr, size_t);
+ #endif
+
+ static inline void lean_free_small_object(lean_object * o) {
+--- a/src/runtime/object.cpp
++++ b/src/runtime/object.cpp
+@@ -56,13 +56,13 @@
+ #endif
+
+ #if !defined(__STDC_VERSION_STDLIB_H__) || __STDC_VERSION_STDLIB_H__ < 202311L
+-extern "C" LEAN_EXPORT
++extern "C" LEAN_FREE_SIZED_EXPORT
+ #if defined(__GLIBC__) && (defined(__GNUC__) || defined(__clang__))
+ // glibc tacks on `__attribute__((nothrow))` to its declarations. In C++ this requires either
+ // `__attribute__((nothrow))` to be present or `noexcept`.
+ __attribute__((nothrow))
+ #endif
+-__attribute__((weak)) void free_sized(void *ptr, size_t) {
++LEAN_FREE_SIZED_WEAK void free_sized(void *ptr, size_t) {
+     free(ptr);
+ }
+ #endif
 --- a/stage0/src/include/lean/lean.h
 +++ b/stage0/src/include/lean/lean.h
-@@ -467 +467 @@
+@@ -79,6 +79,17 @@
+ #define LEAN_EXPORT
+ #endif
+
++// GNU ld for MinGW cannot export a weak COFF symbol. `free_sized` is a
++// fallback implementation, so make it a regular, private definition there.
++// Clang needs the declaration and definition to carry `dllexport` consistently.
++#if defined(__MINGW32__) && !defined(__clang__)
++#define LEAN_FREE_SIZED_EXPORT
++#define LEAN_FREE_SIZED_WEAK
++#else
++#define LEAN_FREE_SIZED_EXPORT LEAN_EXPORT
++#define LEAN_FREE_SIZED_WEAK __attribute__((weak))
++#endif
++
+ // `FLT_EVAL_METHOD` is mandated to exist by the standard since C++11 and C99, but if we're in danger of triggering this
+ // error, all bets are probably off and we should check whether it exists to avoid falling back to `0`.
+ // We also perform this check in `lean.h` rather than in one of the runtime files because it is only valid per translation
+@@ -464,7 +475,7 @@
+ // `__attribute__((nothrow))` to be present or `noexcept`.
+ __attribute__((nothrow))
+ #endif
 -void free_sized(void* ptr, size_t);
-+LEAN_EXPORT void free_sized(void* ptr, size_t);
++LEAN_FREE_SIZED_EXPORT void free_sized(void* ptr, size_t);
+ #endif
+
+ static inline void lean_free_small_object(lean_object * o) {
+--- a/stage0/src/runtime/object.cpp
++++ b/stage0/src/runtime/object.cpp
+@@ -56,13 +56,13 @@
+ #endif
+
+ #if !defined(__STDC_VERSION_STDLIB_H__) || __STDC_VERSION_STDLIB_H__ < 202311L
+-extern "C" LEAN_EXPORT
++extern "C" LEAN_FREE_SIZED_EXPORT
+ #if defined(__GLIBC__) && (defined(__GNUC__) || defined(__clang__))
+ // glibc tacks on `__attribute__((nothrow))` to its declarations. In C++ this requires either
+ // `__attribute__((nothrow))` to be present or `noexcept`.
+ __attribute__((nothrow))
+ #endif
+-__attribute__((weak)) void free_sized(void *ptr, size_t) {
++LEAN_FREE_SIZED_WEAK void free_sized(void *ptr, size_t) {
+     free(ptr);
+ }
+ #endif
