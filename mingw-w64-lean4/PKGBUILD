@@ -27,6 +27,9 @@ if [[ ${MSYSTEM} == CLANG64 ]]; then
                'python')
 else
   LEAN_CXX_STDLIB='-lstdc++'
+  # GNU ld otherwise auto-exports over 100,000 symbols from libleanshared,
+  # exceeding PE's 16-bit export ordinal limit. Keep Lean's explicit exports.
+  LEAN_EXTRA_LINKER_FLAGS='-Wl,--exclude-all-symbols'
   # leanc invokes the C++ compiler when building Lean executables, so GCC is a
   # runtime dependency rather than only a build dependency.
   depends=("${MINGW_PACKAGE_PREFIX}-gcc"
@@ -121,6 +124,7 @@ build() {
     -DLEANTAR="${_leantar}" \
     -DINSTALL_LICENSE=OFF \
     -DLEAN_CXX_STDLIB="${LEAN_CXX_STDLIB}" \
+    -DLEAN_EXTRA_LINKER_FLAGS="${LEAN_EXTRA_LINKER_FLAGS:-}" \
     -DSTAGE1_CMAKE_INSTALL_PREFIX="${MINGW_PREFIX}" \
     -DSTRIP_BINARIES=OFF \
     -DUSE_GITHASH=OFF \
