@@ -57,7 +57,7 @@ sha256sums=('348d0839049a7cbb72b5e82196670e4ded6e1f8ec4610cd6c5188b2754a1f24c'
             '292c2bb8d712d6d05fce3d3df63b922b8fa45e03974a79f7bae5bf68c284f131'
             '7bb21a0a8d152da25863ad53039edddf5fd656b9d7be298b221f4565027f8cc7'
             '7b1b3e70a02ec85c4a3886c6c14163356bc8d54d97e24a9e76b4572a04ddd15f'
-            '2e85d00f3156b38d2d0831987a4a1718c2d8c7b2a43ba159c3f2d1cd64448e9a')
+            '8fbe85f0808f1acdd92b092840c2fd460e0097e4bf4e9ac40a5860fe70e39a9b')
 noextract=("${_realname}-${pkgver}.tar.gz")
 
 prepare() {

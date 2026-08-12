@@ -19,7 +19,7 @@ if the linker map format changes again.
  # now delete included symbols from libLean.a
  	cp ${LIB}/lean/libLean.a.export ${LIB}/lean/diff.a
 -	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
-+	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
++	grep -Eo '[^[:space:]()]+\.o\.export' ${LIB}/temp/libleanshared_1.map | sort -u > ${LIB}/temp/diff.a.in
 +	test -s ${LIB}/temp/diff.a.in || \
 +	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
  # can't use bundled llvm-ar before LLVM 16, https://github.com/llvm/llvm-project/issues/55023
@@ -30,7 +30,7 @@ if the linker map format changes again.
  	echo -n "$(OUTLIB)/libleanshared_2$(SO) symbols: "
  	nm $(OUTLIB)/libleanshared_2$(SO) --extern-only | wc -l
 -	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
-+	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
++	grep -Eo '[^[:space:]()]+\.o\.export' ${LIB}/temp/libleanshared_2.map | sort -u > ${LIB}/temp/diff.a.in
 +	test -s ${LIB}/temp/diff.a.in || \
 +	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
  	ar dP ${LIB}/lean/diff.a @${LIB}/temp/diff.a.in
@@ -43,7 +43,7 @@ if the linker map format changes again.
  # now delete included symbols from libLean.a
  	cp ${LIB}/lean/libLean.a.export ${LIB}/lean/diff.a
 -	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
-+	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_1.map > ${LIB}/temp/diff.a.in
++	grep -Eo '[^[:space:]()]+\.o\.export' ${LIB}/temp/libleanshared_1.map | sort -u > ${LIB}/temp/diff.a.in
 +	test -s ${LIB}/temp/diff.a.in || \
 +	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
  # can't use bundled llvm-ar before LLVM 16, https://github.com/llvm/llvm-project/issues/55023
@@ -54,7 +54,7 @@ if the linker map format changes again.
  	echo -n "$(OUTLIB)/libleanshared_2$(SO) symbols: "
  	nm $(OUTLIB)/libleanshared_2$(SO) --extern-only | wc -l
 -	sed -En 's/.*\s(\S*\.o\.export):.*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
-+	sed -En 's/.*\(([^)]*\.o\.export)\).*/\1/p' ${LIB}/temp/libleanshared_2.map > ${LIB}/temp/diff.a.in
++	grep -Eo '[^[:space:]()]+\.o\.export' ${LIB}/temp/libleanshared_2.map | sort -u > ${LIB}/temp/diff.a.in
 +	test -s ${LIB}/temp/diff.a.in || \
 +	  { echo "failed to identify consumed .o.export members in linker map" >&2; exit 1; }
  	ar dP ${LIB}/lean/diff.a @${LIB}/temp/diff.a.in
