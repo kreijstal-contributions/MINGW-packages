@@ -73,6 +73,13 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suuy'
           msys2 -c 'pacman --noconfirm -Suu'
 
+      - name: Configure resilient source downloads
+        shell: msys2 {0}
+        run: |
+          printf '%s\n' \
+            "DLAGENTS=('https::/usr/bin/curl --http1.1 --retry 5 --retry-all-errors -fLC - -o %o %u')" \
+            >> /etc/makepkg.conf
+
       - name: Move Checkout
         run: |
           $path = "${{ steps.facts.outputs.drive }}\_"
