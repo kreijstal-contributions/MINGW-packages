@@ -58,6 +58,9 @@ makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "flex"
              "rsync")
 _pkgfn="${_realname/6-/}-everywhere-src-${pkgver}"
+# The private msys2-ur build omits Chromium's multi-gigabyte symbol_level=2
+# output so the primary package fits GitHub's six-hour Windows runner limit.
+_build_type=Release
 source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/submodules/${_pkgfn}.tar.xz"
         0001-cmake-configure-fixes.patch
         0002-chromium-add-mingw-toolchain.patch
@@ -295,7 +298,7 @@ build() {
   MSYS2_ARG_CONV_EXCL="-DCMAKE_INSTALL_PREFIX=" \
   cmake -Wno-dev \
     -GNinja \
-    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    -DCMAKE_BUILD_TYPE=${_build_type} \
     -DCMAKE_INSTALL_PREFIX=${MINGW_PREFIX} \
     -DPython3_EXECUTABLE=${MINGW_PREFIX}/bin/python \
     -DQT_FEATURE_qtpdf_build=OFF \
@@ -329,7 +332,7 @@ build() {
     -S ${_pkgfn} \
     -B build-${MSYSTEM}
 
-  install -d "build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64/gen"
+  install -d "build-${MSYSTEM}/src/core/${_build_type}/AMD64/gen"
   # WebUI actions consume generated JSON, JavaScript, TypeScript and protocol
   # data as well as headers. Copy the complete generated set packaged upstream.
   rsync -a \
@@ -346,13 +349,13 @@ build() {
     --include='third_party/devtools-frontend/***' \
     --exclude='*' \
     "${MINGW_PREFIX}/share/qt6-webengine-private/chromium/gen/" \
-    "build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64/gen/"
+    "build-${MSYSTEM}/src/core/${_build_type}/AMD64/gen/"
   # The sanitizer turns every fully-copied generated edge into a phony leaf.
   # Keeping this manifest data-driven avoids rebuilding a generator just because
   # its output happens to be TypeScript, protocol data, or a future WebUI type.
   local _prebuilt_gen_manifest="${srcdir}/qtwebengine-prebuilt-gen-${MSYSTEM}.rsp"
   (
-    cd "build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
+    cd "build-${MSYSTEM}/src/core/${_build_type}/AMD64"
     find gen -type f -print | sort
   ) > "${_prebuilt_gen_manifest}"
 
@@ -362,11 +365,11 @@ build() {
   # Native Windows python: hand it a mixed path, a bare /ucrt64/... resolves
   # against the current drive and silently finds nothing.
   python "${srcdir}/QtSanitizeWebEngineNinja.py" \
-    "build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64" \
+    "build-${MSYSTEM}/src/core/${_build_type}/AMD64" \
     "$(cygpath -m "${MINGW_PREFIX}/lib/qt6-webengine-private")" \
     "${_prebuilt_gen_manifest}"
 
-  local _ninja_dir="build-${MSYSTEM}/src/core/RelWithDebInfo/AMD64"
+  local _ninja_dir="build-${MSYSTEM}/src/core/${_build_type}/AMD64"
   # Runs on the sanitized graph, so the edges dropped above are not considered.
   python "${srcdir}/QtRepairWebEngineNinja.py" "${_ninja_dir}"
 

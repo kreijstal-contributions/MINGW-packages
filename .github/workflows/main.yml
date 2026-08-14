@@ -73,9 +73,10 @@ jobs:
           msys2 -c 'pacman --noconfirm -Suuy'
           msys2 -c 'pacman --noconfirm -Suu'
 
-      - name: Configure resilient source downloads
+      - name: Configure resilient downloads
         shell: msys2 {0}
         run: |
+          sed -i '/^\[options\]$/a XferCommand = /usr/bin/curl -L --http1.1 --retry 8 --retry-all-errors --connect-timeout 30 -C - -f -o %o %u' /etc/pacman.conf
           printf '%s\n' \
             "DLAGENTS=('https::/usr/bin/curl --http1.1 --retry 5 --retry-all-errors -fLC - -o %o %u')" \
             >> /etc/makepkg.conf
