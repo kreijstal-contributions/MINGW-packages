@@ -3,8 +3,8 @@
 _realname=qt6-webengine
 pkgbase=mingw-w64-${_realname}-thirdparty
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}-thirdparty")
-pkgver=6.11.1
-pkgrel=2
+pkgver=6.11.2
+pkgrel=1
 pkgdesc='Private third-party static archives for Qt6 WebEngine (mingw-w64)'
 arch=(any)
 mingw_arch=('ucrt64' 'clang64')
@@ -103,7 +103,7 @@ source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/subm
         thirdparty-extra-targets.list
         QtWebEngineNinjaGraph.py
         QtRepairWebEngineNinja.py)
-sha256sums=('679c66ccc6c158fc215e9c58ef160331ecd29974232e345c05161889f8667083'
+sha256sums=('6101c1aa00ff933d1b65ee5d167f76e8d71b9ac5b378b0111277723ebda7c163'
             'c59e77c033c1f58f048b81e16a5f9a47f459e4e302b0da9125f73b20f9ff1dff'
             '16221ed5a9414f5c965cd8a5efa6d9ccd2aec88b3d5ef5f8e811546ae7a39927'
             'c9e9ff822ba4c7e76624b655e78a3018989fef9b667b2cc246fe34e1f594976b'
@@ -130,7 +130,7 @@ sha256sums=('679c66ccc6c158fc215e9c58ef160331ecd29974232e345c05161889f8667083'
             '746cda436f132b6bd0950333690ea720326763a59ba1c579a205deb73887d691'
             '511c6b3e059ae086e18c43885793119be5e5d14d6037464c8bcd22f46d63c281'
             '263759790b3c3d7a6fcd2332b38226d7b244dff8ab8410fd471a3f5f7b096db3'
-            '2476e5b9605e576370d1e278a5a4bd076f6d6ade26e9aac81a4568b6e99c2810'
+            'f826ee5636ed1cd24c39989236e942959bb3b3e45e7f007eaef54e5f50b88a25'
             '2b346ec92699b20458f3df5733f8792ef75ea824d24782ded211c0ac0258a249'
             'a05bb6488f02e89899a55873f6982c3cfc8e9ecbf9154ab722738d55cd5c8acb'
             'f63a316686ab895a892feee12379fbbc26497bc6b3f141d86f69c6bf06173780'

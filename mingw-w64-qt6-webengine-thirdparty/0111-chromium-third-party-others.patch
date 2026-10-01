@@ -495,11 +495,12 @@ diff --git a/src/3rdparty/chromium/third_party/libaom/source/config/win/arm64-cp
 index 2f86dfa..1b19e43 100644
 --- a/src/3rdparty/chromium/third_party/libaom/source/config/win/arm64-cpu-detect/config/aom_config.h
 +++ b/src/3rdparty/chromium/third_party/libaom/source/config/win/arm64-cpu-detect/config/aom_config.h
-@@ -84,7 +84,6 @@
+@@ -84,8 +84,7 @@
  #define HAVE_NEON 1
  #define HAVE_NEON_DOTPROD 1
  #define HAVE_NEON_I8MM 1
 -#define HAVE_PTHREAD_H  0
+ #define HAVE_PTHREAD_SETNAME_NP 1
  #define HAVE_RVV 0
  #define HAVE_SSE 0
  #define HAVE_SSE2 0
@@ -507,11 +508,12 @@ diff --git a/src/3rdparty/chromium/third_party/libaom/source/config/win/ia32/con
 index 5807d90..0a9d806 100644
 --- a/src/3rdparty/chromium/third_party/libaom/source/config/win/ia32/config/aom_config.h
 +++ b/src/3rdparty/chromium/third_party/libaom/source/config/win/ia32/config/aom_config.h
-@@ -84,7 +84,6 @@
+@@ -84,8 +84,7 @@
  #define HAVE_NEON 0
  #define HAVE_NEON_DOTPROD 0
  #define HAVE_NEON_I8MM 0
 -#define HAVE_PTHREAD_H  0
+ #define HAVE_PTHREAD_SETNAME_NP 1
  #define HAVE_RVV 0
  #define HAVE_SSE 1
  #define HAVE_SSE2 1
@@ -519,11 +521,12 @@ diff --git a/src/3rdparty/chromium/third_party/libaom/source/config/win/x64/conf
 index 3728fcb..7c80c61 100644
 --- a/src/3rdparty/chromium/third_party/libaom/source/config/win/x64/config/aom_config.h
 +++ b/src/3rdparty/chromium/third_party/libaom/source/config/win/x64/config/aom_config.h
-@@ -84,7 +84,6 @@
+@@ -84,8 +84,7 @@
  #define HAVE_NEON 0
  #define HAVE_NEON_DOTPROD 0
  #define HAVE_NEON_I8MM 0
 -#define HAVE_PTHREAD_H  0
+ #define HAVE_PTHREAD_SETNAME_NP 1
  #define HAVE_RVV 0
  #define HAVE_SSE 1
  #define HAVE_SSE2 1
