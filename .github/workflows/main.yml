@@ -91,8 +91,13 @@ jobs:
             UCRT64) prefix=mingw-w64-ucrt-x86_64 ;;
             CLANG64) prefix=mingw-w64-clang-x86_64 ;;
           esac
-          pacman -U --noconfirm \
-            "https://github.com/Kreijstal/msys2-ur/releases/download/x11-shared-20260731/${prefix}-qt6-webengine-thirdparty-6.11.2-1-any.pkg.tar.zst"
+          # Download first: pacman -U <url> also asks for a .sig, which the
+          # release does not carry, and the 404 aborts the install.
+          pkg="${prefix}-qt6-webengine-thirdparty-6.11.2-1-any.pkg.tar.zst"
+          curl -fL --retry 5 --retry-all-errors -o "/tmp/${pkg}" \
+            "https://github.com/Kreijstal/msys2-ur/releases/download/x11-shared-20260731/${pkg}"
+          pacman -U --noconfirm "/tmp/${pkg}"
+          rm -f "/tmp/${pkg}"
 
       - name: Move Checkout
         run: |
