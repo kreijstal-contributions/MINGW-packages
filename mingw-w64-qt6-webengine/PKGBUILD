@@ -105,6 +105,7 @@ source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/subm
         0124-chromium-abseil-policy-functions-mingw.patch
         0125-chromium-d3d12-video-device-mingw.patch
         0126-chromium-mingw-link-followup.patch
+        0127-chromium-audio-session-observer-mingw.patch
         QtSanitizeWebEngineNinja.py
         QtWebEngineNinjaGraph.py
         QtRepairWebEngineNinja.py
@@ -155,6 +156,7 @@ sha256sums=('6101c1aa00ff933d1b65ee5d167f76e8d71b9ac5b378b0111277723ebda7c163'
             '58b53bb8e67a42b25c4dc906e3bd7a03384cc9622b65b804c07ead8e6460462a'
             'fcdb3e8692154d408f53625fbaabfa23051be4f1c38eca5c921e3bdeb57d3588'
             'b5fb929bf6ab66c29982a3d6794d12bcad7a5e3988547fa90e37fc9635856263'
+            '0699467fb862f1059d718ff1b27794c152e72f5efcccf12d99540eba2640e2d6'
             '9e197d2baf6aefdc099c284f91016e0a94f564248058a1a0660b8c62eb0e1da2'
             '38f976011201c1c6434c2d247bf8f254d6ecc06c8f7579cf6edb35c2337a3d87'
             'ce2c64e7f58c7223685040c557a5c5b4d2d831942a8e7f56a42a2c34fa9891f1'
@@ -237,6 +239,9 @@ prepare() {
 
   msg2 "Applying 0126-chromium-mingw-link-followup.patch"
   patch -Np1 -i "${srcdir}/0126-chromium-mingw-link-followup.patch"
+
+  msg2 "Applying 0127-chromium-audio-session-observer-mingw.patch"
+  patch -Np1 -i "${srcdir}/0127-chromium-audio-session-observer-mingw.patch"
 
   # These three land before the third_party tree is swapped in below, because
   # -thirdparty applies them too: its copy already carries the third_party side
