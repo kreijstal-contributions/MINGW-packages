@@ -81,6 +81,19 @@ jobs:
             "DLAGENTS=('https::/usr/bin/curl --http1.1 --retry 5 --retry-all-errors -fLC - -o %o %u')" \
             >> /etc/makepkg.conf
 
+      - name: Install qt6-webengine-thirdparty 6.11.2
+        if: ${{ matrix.msystem == 'UCRT64' || matrix.msystem == 'CLANG64' }}
+        shell: msys2 {0}
+        run: |
+          # The msys2ur database keeps the thirdparty version that the published
+          # qt6-webengine pins, so fetch the one this build needs by URL.
+          case "${{ matrix.msystem }}" in
+            UCRT64) prefix=mingw-w64-ucrt-x86_64 ;;
+            CLANG64) prefix=mingw-w64-clang-x86_64 ;;
+          esac
+          pacman -U --noconfirm \
+            "https://github.com/Kreijstal/msys2-ur/releases/download/x11-shared-20260731/${prefix}-qt6-webengine-thirdparty-6.11.2-1-any.pkg.tar.zst"
+
       - name: Move Checkout
         run: |
           $path = "${{ steps.facts.outputs.drive }}\_"

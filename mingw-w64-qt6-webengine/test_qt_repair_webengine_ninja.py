@@ -18,7 +18,7 @@ import QtWebEngineNinjaGraph as graph
 SANITIZER = HERE / "QtSanitizeWebEngineNinja.py"
 
 
-MANIFEST = r'''include_dirs = -Igen/.moc
+MANIFEST = r'''include_dirs = -Igen/.moc -Igen
 rule action
   command = action $in
 rule mojom
@@ -70,7 +70,12 @@ build gen/third_party/blink/public/test/mojom/automation.test-mojom-module: acti
 build gen/third_party/blink/public/test/mojom/automation.test-mojom.cc: test_generator
 build gen/.moc/location_provider_qt.moc: action location_provider_qt.cpp
 build obj/core.o: cxx source.cc gen/loader_jumbo_9.cc
-build QtWebEngineCore: link obj/core.o
+rule __ui_base_base__jumbo_merge___build_toolchain_win_mingw_x64__rule
+  command = merge $in
+build gen/ui/base/base_jumbo_2.cc: __ui_base_base__jumbo_merge___build_toolchain_win_mingw_x64__rule | l10n_util.cc
+build gen/ui/base/l10n/l10n_util_locales_list.inc: action generate_locales_list.py
+build obj/ui/base/base_jumbo_2.o: cxx gen/ui/base/base_jumbo_2.cc
+build QtWebEngineCore: link obj/core.o obj/ui/base/base_jumbo_2.o
 '''
 
 
@@ -84,6 +89,13 @@ class GeneratedActionOrderingTest(unittest.TestCase):
         (build_dir / "location_provider_qt.cpp").write_text(
             "class LocationProvider {};\n", encoding="utf-8")
         (build_dir / "names.in").write_text("names\n", encoding="utf-8")
+        # GN lists a jumbo merge's on-disk sources as implicit inputs only.
+        (build_dir / "l10n_util.cc").write_text(
+            '#include "ui/base/l10n/l10n_util_locales_list.inc"\n',
+            encoding="utf-8",
+        )
+        (build_dir / "generate_locales_list.py").write_text(
+            "", encoding="utf-8")
 
         old_argv = sys.argv
         try:
@@ -146,6 +158,8 @@ class GeneratedActionOrderingTest(unittest.TestCase):
             )
             self.assertIn("qtwebengine_generated_prerequisites",
                           by_output["obj/core.o"].order_only)
+            self.assertIn("gen/ui/base/l10n/l10n_util_locales_list.inc",
+                          by_output["qtwebengine_generated_prerequisites"].inputs)
 
     def test_repair_is_idempotent(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -451,7 +451,10 @@ def main():
                 if os.path.isfile(in_build_dir(build_dir, source)):
                     start_files.add(source)
                 elif source in producer:
-                    for nested in producer[source].inputs:
+                    # GN writes a jumbo merge's on-disk sources as implicit
+                    # inputs ("| a.cc b.cc"), so read both lists.
+                    for nested in (producer[source].inputs +
+                                   producer[source].implicit):
                         if not nested.endswith(SOURCE_SUFFIXES):
                             continue
                         if os.path.isfile(in_build_dir(build_dir, nested)):
