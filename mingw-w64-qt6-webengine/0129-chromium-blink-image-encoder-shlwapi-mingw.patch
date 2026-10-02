@@ -1,0 +1,14 @@
+--- a/src/3rdparty/chromium/third_party/blink/renderer/platform/image-encoders/image_encoder.cc	2026-10-02 19:18:14.243990011 +0200
++++ b/src/3rdparty/chromium/third_party/blink/renderer/platform/image-encoders/image_encoder.cc	2026-10-02 19:18:14.263990403 +0200
+@@ -14,6 +14,11 @@
+ #include <stdio.h>  // Needed by jpeglib.h
+ 
+ #include "jpeglib.h"  // for JPEG_MAX_DIMENSION
++#if defined(__MINGW32__)
++// mingw's jmorecfg.h includes shlwapi.h, whose StrCat macro would rename
++// later blink::StrCat calls in this jumbo unit to the nonexistent StrCatW.
++#undef StrCat
++#endif
+ #include "third_party/libwebp/src/src/webp/encode.h"  // for WEBP_MAX_DIMENSION
+ 
+ namespace blink {

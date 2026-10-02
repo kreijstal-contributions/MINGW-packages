@@ -109,7 +109,7 @@ source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/subm
         0126-chromium-mingw-link-followup.patch
         0127-chromium-audio-session-observer-mingw.patch
         0128-chromium-shell-no-atl-mingw.patch
-        0129-chromium-blink-no-shlwapi-strfcns-mingw.patch
+        0129-chromium-blink-image-encoder-shlwapi-mingw.patch
         QtSanitizeWebEngineNinja.py
         QtWebEngineNinjaGraph.py
         QtRepairWebEngineNinja.py
@@ -162,7 +162,7 @@ sha256sums=('6101c1aa00ff933d1b65ee5d167f76e8d71b9ac5b378b0111277723ebda7c163'
             'b5fb929bf6ab66c29982a3d6794d12bcad7a5e3988547fa90e37fc9635856263'
             '0699467fb862f1059d718ff1b27794c152e72f5efcccf12d99540eba2640e2d6'
             'b5b3a3572185af397251021823ae73be0f4749fc4aadf0bbce92a9cb1dc09407'
-            'e8b0d1d269ff5c9d9d14097817bcd0c39ae1377d803310b845cf43bd2df9ee5b'
+            'de6f044ca6c015ed365a0908c951caa7328da90ccc7fc1494dd990921157ec8c'
             '9e197d2baf6aefdc099c284f91016e0a94f564248058a1a0660b8c62eb0e1da2'
             '38f976011201c1c6434c2d247bf8f254d6ecc06c8f7579cf6edb35c2337a3d87'
             '5fe5e418e220e5cc3e2dbaa5e1b8b281eee5d2707fd6d97184e66fd1c719a5c9'
@@ -252,8 +252,8 @@ prepare() {
   msg2 "Applying 0128-chromium-shell-no-atl-mingw.patch"
   patch -Np1 -i "${srcdir}/0128-chromium-shell-no-atl-mingw.patch"
 
-  msg2 "Applying 0129-chromium-blink-no-shlwapi-strfcns-mingw.patch"
-  patch -Np1 -i "${srcdir}/0129-chromium-blink-no-shlwapi-strfcns-mingw.patch"
+  msg2 "Applying 0129-chromium-blink-image-encoder-shlwapi-mingw.patch"
+  patch -Np1 -i "${srcdir}/0129-chromium-blink-image-encoder-shlwapi-mingw.patch"
 
   # These three land before the third_party tree is swapped in below, because
   # -thirdparty applies them too: its copy already carries the third_party side
