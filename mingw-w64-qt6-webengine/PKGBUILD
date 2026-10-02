@@ -35,9 +35,11 @@ depends=("${MINGW_PACKAGE_PREFIX}-ffmpeg"
          "${MINGW_PACKAGE_PREFIX}-opus"
          "${MINGW_PACKAGE_PREFIX}-re2"
          "${MINGW_PACKAGE_PREFIX}-snappy"
-         "${MINGW_PACKAGE_PREFIX}-zlib"
-         "${MINGW_PACKAGE_PREFIX}-${_realname}-thirdparty=${pkgver}")
-makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+# -thirdparty only carries the prebuilt Chromium archives, objects and
+# generated sources linked into QtWebEngineCore; nothing loads it at runtime.
+makedepends=("${MINGW_PACKAGE_PREFIX}-${_realname}-thirdparty=${pkgver}"
+             "${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-directx-headers"
              "${MINGW_PACKAGE_PREFIX}-flatbuffers"
