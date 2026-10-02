@@ -252,9 +252,6 @@ prepare() {
   msg2 "Applying 0128-chromium-shell-no-atl-mingw.patch"
   patch -Np1 -i "${srcdir}/0128-chromium-shell-no-atl-mingw.patch"
 
-  msg2 "Applying 0129-chromium-blink-image-encoder-shlwapi-mingw.patch"
-  patch -Np1 -i "${srcdir}/0129-chromium-blink-image-encoder-shlwapi-mingw.patch"
-
   # These three land before the third_party tree is swapped in below, because
   # -thirdparty applies them too: its copy already carries the third_party side
   # of each, so re-applying afterwards fails as "previously applied".  Patching
@@ -297,6 +294,10 @@ prepare() {
 
   msg2 "Applying 0115-chromium-private-brotli-tool.patch"
   patch -Np1 -i "${srcdir}/0115-chromium-private-brotli-tool.patch"
+
+  # Patches third_party/blink, so it must follow the swap above.
+  msg2 "Applying 0129-chromium-blink-image-encoder-shlwapi-mingw.patch"
+  patch -Np1 -i "${srcdir}/0129-chromium-blink-image-encoder-shlwapi-mingw.patch"
 }
 
 build() {
