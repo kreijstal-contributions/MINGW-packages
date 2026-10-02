@@ -1,0 +1,54 @@
+--- a/src/3rdparty/chromium/ui/base/win/shell.cc
++++ b/src/3rdparty/chromium/ui/base/win/shell.cc
+@@ -23,7 +23,11 @@
+ #include "base/strings/string_util.h"
+ #include "base/threading/scoped_blocking_call.h"
+ #include "base/threading/scoped_thread_priority.h"
++#if defined(_MSC_VER)
+ #include "base/win/atl.h"
++#else
++#include <memory>
++#endif
+ #include "base/win/win_util.h"
+ #include "ui/base/ui_base_switches.h"
+ 
+@@ -69,7 +73,15 @@
+       (working_directory.empty() ? nullptr : working_directory.c_str());
+   sei.lpParameters = (args.empty() ? nullptr : args.c_str());
+ 
++#if defined(_MSC_VER)
+   CComHeapPtr<ITEMIDLIST_ABSOLUTE> path_id_list;
++#else
++  // mingw-w64 has no ATL; free the SHParseDisplayName result the same way.
++  struct CoTaskMemDeleter {
++    void operator()(void* p) const { ::CoTaskMemFree(p); }
++  };
++  std::unique_ptr<ITEMIDLIST_ABSOLUTE, CoTaskMemDeleter> path_id_list;
++#endif
+   if (base::FeatureList::IsEnabled(kManuallyParsePathForShellExecute)) {
+     // ShellExecute will perform legacy resolution of a path if it can't detect
+     // an extension from a given path, appending .pif, .com, .exe, .bat, .lnk,
+@@ -77,12 +89,23 @@
+     // (Example: "chrome" referring to "chrome.exe"). ShellExecute will perform
+     // this resolution even if the path refers to a valid file. Chromium
+     // expects paths to be fully qualified and does not need this resolution.
++#if defined(_MSC_VER)
+     if (FAILED(::SHParseDisplayName(path.c_str(), nullptr, &path_id_list,
+                                     SFGAO_FILESYSTEM, nullptr))) {
+       return false;
+     }
+     sei.fMask |= SEE_MASK_IDLIST;
+     sei.lpIDList = path_id_list.m_pData;
++#else
++    PIDLIST_ABSOLUTE parsed_id_list = nullptr;
++    if (FAILED(::SHParseDisplayName(path.c_str(), nullptr, &parsed_id_list,
++                                    SFGAO_FILESYSTEM, nullptr))) {
++      return false;
++    }
++    path_id_list.reset(parsed_id_list);
++    sei.fMask |= SEE_MASK_IDLIST;
++    sei.lpIDList = path_id_list.get();
++#endif
+   } else {
+     sei.lpFile = path.c_str();
+   }
