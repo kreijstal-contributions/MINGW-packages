@@ -4,7 +4,7 @@ _realname=qt6-webengine
 pkgbase=mingw-w64-${_realname}-thirdparty
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}-thirdparty")
 pkgver=6.11.2
-pkgrel=1
+pkgrel=2
 pkgdesc='Private third-party static archives for Qt6 WebEngine (mingw-w64)'
 arch=(any)
 mingw_arch=('ucrt64' 'clang64')
@@ -100,6 +100,7 @@ source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/subm
         0118-chromium-system-jsoncpp-lib.patch
         0127-chromium-shim-headers-subst-root.patch
         0128-chromium-xnnpack-long-targets.patch
+        0130-chromium-no-protected-memory-mingw.patch
         thirdparty-extra-targets.list
         QtWebEngineNinjaGraph.py
         QtRepairWebEngineNinja.py)
@@ -147,6 +148,7 @@ sha256sums=('6101c1aa00ff933d1b65ee5d167f76e8d71b9ac5b378b0111277723ebda7c163'
             'ec1a322985326ac80d19b36c34ba95a4794d7623ae6c6780f937e56f130e4405'
             'cc3baeafa575be49127df49ffb331119f3475c638ff209f435be2f554aa992f1'
             'ac9b5459e253ed3ae1682eadd724d0e97245780a2b6e221c6df7971b249800eb'
+            '11c26bdfeeae82f75d3718ff4bcb4c7078021de8b2ffc0a77c77ca066439db48'
             '5aa1cb50799d5c960373c871cc54523d8a793116da11fd99b7adfb049de902a8'
             '7f299556a4a2c018221edf3dc5f7429746c0515d0cb09131ad4662a26442e2d0'
             '83da9ac2e55eb17be5e83518cc1500ef6734569ba5207c307b6c4f42e43542f7')
@@ -248,7 +250,8 @@ prepare() {
     0126-chromium-mingw-link-followup.patch \
     0116-chromium-system-flatc-tool.patch \
     0117-chromium-system-protobuf-libs.patch \
-    0118-chromium-system-jsoncpp-lib.patch
+    0118-chromium-system-jsoncpp-lib.patch \
+    0130-chromium-no-protected-memory-mingw.patch
 
   # Targets only this package builds.
   apply_patch_with_msg \
