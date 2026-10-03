@@ -47,6 +47,7 @@ _patches=(
   '0008-Use-unique-ptr-for-crashreporter-log-stream.patch'
   '0009-Use-byte-traits-for-mozpkix-ByteString.patch'
   '0010-Fix-mozpack-globstar-match-on-Python-3.7.patch'
+  '0011-Guard-S_IFLNK-and-S_IFSOCK-in-OSFileConstants.patch'
 )
 source=(
   "Mypal68-${pkgver}.tar.gz::https://github.com/Feodor2/Mypal68/archive/refs/tags/${pkgver}.tar.gz"
@@ -66,6 +67,7 @@ sha256sums=(
   'f40d047811613fa43a9b082165fc4cdc654ae5e7790acfe9766fd2ea0ad9bb9b'
   'd204985c28e0f15b4d94902bf4093c684f3e44d6ecb9c511c7eccb9989decfc4'
   '242ed150d22c684630949b45d5d5560841954f19146e9559486344b29d94191c'
+  'd98221c72d42f8f54b10351491d14d778ac8e7e25d1c215d3f6fc2f5df8b076e'
   '28a1b66844e92649af445481461c2059a5bb3e6dff7edb9369407ff9ae90caa7'
   '2b2b75df8d1c76c99257890670323b1ff12876bf2326197783058c8dd22fa0a7'
 )
