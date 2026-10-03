@@ -1,0 +1,13 @@
+--- a/python/mozbuild/mozpack/path.py
++++ b/python/mozbuild/mozpack/path.py
+@@ -135,8 +135,8 @@
+         return True
+     if pattern not in re_cache:
+         p = re.escape(pattern)
+-        p = re.sub(r'(^|\\\/)\\\*\\\*\\\/', r'\1(?:.+/)?', p)
+-        p = re.sub(r'(^|\\\/)\\\*\\\*$', r'(?:\1.+)?', p)
++        p = re.sub(r'(^|\\?/)\\\*\\\*\\?/', r'\1(?:.+/)?', p)
++        p = re.sub(r'(^|\\?/)\\\*\\\*$', r'(?:\1.+)?', p)
+         p = p.replace(r'\*', '[^/]*') + '(?:/.*)?$'
+         re_cache[pattern] = re.compile(p)
+     return re_cache[pattern].match(path) is not None
