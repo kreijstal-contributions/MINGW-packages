@@ -1,6 +1,8 @@
+diff --git a/security/nss/lib/mozpkix/include/pkix-test/pkixtestutil.h b/security/nss/lib/mozpkix/include/pkix-test/pkixtestutil.h
+index e03daaf879..72a035b850 100644
 --- a/security/nss/lib/mozpkix/include/pkix-test/pkixtestutil.h
 +++ b/security/nss/lib/mozpkix/include/pkix-test/pkixtestutil.h
-@@ -34,7 +34,47 @@
+@@ -34,7 +34,47 @@ namespace mozilla {
  namespace pkix {
  namespace test {
  

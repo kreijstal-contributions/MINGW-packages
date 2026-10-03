@@ -1,6 +1,8 @@
+diff --git a/dom/media/gmp/rlz/lib/machine_id.cc b/dom/media/gmp/rlz/lib/machine_id.cc
+index b2943f90ff..dd41e52001 100644
 --- a/dom/media/gmp/rlz/lib/machine_id.cc
 +++ b/dom/media/gmp/rlz/lib/machine_id.cc
-@@ -50,7 +50,7 @@
+@@ -50,7 +50,7 @@ bool GetMachineIdImpl(const std::vector<uint8_t>& sid_bytes,
  
    // The ID should be the SID hash + the Hard Drive SNo. + checksum byte.
    static const int kSizeWithoutChecksum = mozilla::SHA1Sum::kHashSize + sizeof(int);
@@ -9,7 +11,7 @@
  
    if (!sid_bytes.empty()) {
      // In order to be compatible with the old version of RLZ, the hash of the
-@@ -80,12 +80,12 @@
+@@ -80,12 +80,12 @@ bool GetMachineIdImpl(const std::vector<uint8_t>& sid_bytes,
  
    // Append the checksum byte.
    if (!sid_bytes.empty() || (0 != volume_id))

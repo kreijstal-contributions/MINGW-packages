@@ -1,0 +1,33 @@
+diff --git a/Cargo.lock b/Cargo.lock
+index f650f0fc9c..e008774233 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -1599,9 +1599,9 @@ checksum = "3576a87f2ba00f6f106fdfcd16db1d698d648a26ad8e0573cad8537c3c362d2a"
+ 
+ [[package]]
+ name = "libc"
+-version = "0.2.60"
++version = "0.2.66"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d44e80633f007889c7eff624b709ab43c92d708caad982295768a7b13ca3b5eb"
++checksum = "d515b1f41455adea1313a4a2ac8a8a477634fbae63cc6100e3aebb207ce61558"
+ 
+ [[package]]
+ name = "libdbus-sys"
+@@ -2840,13 +2840,12 @@ dependencies = [
+ 
+ [[package]]
+ name = "socket2"
+-version = "0.3.10"
++version = "0.3.19"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "df028e0e632c2a1823d920ad74895e7f9128e6438cbc4bc6fd1f180e644767b9"
++checksum = "122e570113d28d773067fab24266b66753f6ea915758651696b6e35e49f88d6e"
+ dependencies = [
+- "cfg-if 0.1.10",
++ "cfg-if 1.0.4",
+  "libc",
+- "redox_syscall",
+  "winapi 0.3.7",
+ ]
+ 

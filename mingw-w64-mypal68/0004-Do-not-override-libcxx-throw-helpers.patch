@@ -1,3 +1,5 @@
+diff --git a/config/gcc-stl-wrapper.template.h b/config/gcc-stl-wrapper.template.h
+index 232a265ecb..f464063f82 100644
 --- a/config/gcc-stl-wrapper.template.h
 +++ b/config/gcc-stl-wrapper.template.h
 @@ -57,7 +57,7 @@
