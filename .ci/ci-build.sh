@@ -138,9 +138,8 @@ for package in "${packages[@]}"; do
     message 'Building binary'
     makepkg-mingw --noconfirm --noprogressbar --nocheck --syncdeps --rmdeps --cleanbuild || failure "${status} failed"
     cd - > /dev/null
-    # Keep the packages even when the install test below cannot run: [staging]
-    # has no mirrors, so a repo.msys2.org outage would otherwise fail the sync
-    # and lose hours of build output.
+    # Keep the packages even when the install test below cannot run, so a
+    # repository outage does not throw away hours of build output.
     cp $PWD/B/*.pkg.tar.* $PWD/artifacts
     repo-add $PWD/artifacts/ci.db.tar.gz $PWD/B/*.pkg.tar.*
     pacman -Sy || echo "::warning::pacman -Sy failed, testing against stale databases"
