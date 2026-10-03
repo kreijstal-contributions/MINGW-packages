@@ -4,7 +4,7 @@ _realname=qt6-webengine
 pkgbase=mingw-w64-${_realname}
 pkgname=("${MINGW_PACKAGE_PREFIX}-${_realname}")
 pkgver=6.11.2
-pkgrel=1
+pkgrel=2
 pkgdesc='Qt6 WebEngine module (mingw-w64)'
 arch=(any)
 mingw_arch=('ucrt64' 'clang64')
@@ -111,6 +111,7 @@ source=("https://download.qt.io/official_releases/qt/${pkgver%.*}/${pkgver}/subm
         0128-chromium-shell-no-atl-mingw.patch
         0129-chromium-blink-image-encoder-shlwapi-mingw.patch
         0130-chromium-no-protected-memory-mingw.patch
+        0131-core-no-sandbox-mingw.patch
         QtSanitizeWebEngineNinja.py
         QtWebEngineNinjaGraph.py
         QtRepairWebEngineNinja.py
@@ -165,6 +166,7 @@ sha256sums=('6101c1aa00ff933d1b65ee5d167f76e8d71b9ac5b378b0111277723ebda7c163'
             'b5b3a3572185af397251021823ae73be0f4749fc4aadf0bbce92a9cb1dc09407'
             'de6f044ca6c015ed365a0908c951caa7328da90ccc7fc1494dd990921157ec8c'
             '11c26bdfeeae82f75d3718ff4bcb4c7078021de8b2ffc0a77c77ca066439db48'
+            '83bdcd0f06b5dc0d71a4bc6941fe0c862b49fa8ec903d29217b93562e4c516a0'
             '9e197d2baf6aefdc099c284f91016e0a94f564248058a1a0660b8c62eb0e1da2'
             '38f976011201c1c6434c2d247bf8f254d6ecc06c8f7579cf6edb35c2337a3d87'
             '5fe5e418e220e5cc3e2dbaa5e1b8b281eee5d2707fd6d97184e66fd1c719a5c9'
@@ -303,6 +305,9 @@ prepare() {
 
   msg2 "Applying 0130-chromium-no-protected-memory-mingw.patch"
   patch -Np1 -i "${srcdir}/0130-chromium-no-protected-memory-mingw.patch"
+
+  msg2 "Applying 0131-core-no-sandbox-mingw.patch"
+  patch -Np1 -i "${srcdir}/0131-core-no-sandbox-mingw.patch"
 }
 
 build() {
@@ -427,6 +432,16 @@ package_qt6-webengine() {
   groups=("${MINGW_PACKAGE_PREFIX}-qt6")
 
   DESTDIR="${pkgdir}" cmake --install build-${MSYSTEM}
+
+  # Qt looks for QtWebEngineProcess in BinariesPath after LibraryExecutablesPath.
+  # Keep it beside the runtime DLLs so apps started outside an MSYS2 shell can
+  # spawn it.
+  local _helper
+  for _helper in QtWebEngineProcess.exe QtWebEngineProcess.debug; do
+    if [[ -f "${pkgdir}${MINGW_PREFIX}/share/qt6/bin/${_helper}" ]]; then
+      mv "${pkgdir}${MINGW_PREFIX}/share/qt6/bin/${_helper}" "${pkgdir}${MINGW_PREFIX}/bin/"
+    fi
+  done
 
   install -d "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}"
   install -Dm644 ${_pkgfn}/LICENSES/* -t "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}"

@@ -1,0 +1,25 @@
+--- a/src/core/web_engine_context.cpp
++++ b/src/core/web_engine_context.cpp
+@@ -636,13 +636,20 @@
+ 
+     // Enable sandboxing on OS X and Linux (Desktop / Embedded) by default.
+     bool disable_sandbox = qEnvironmentVariableIsSet(kDisableSandboxEnv);
+-    if (!disable_sandbox) {
++    bool sandbox_unsupported = false;
++#if defined(Q_OS_WIN) && defined(Q_CC_MINGW)
++    // Every sandboxed child of a MinGW build dies at startup with an access
++    // violation, so run them unsandboxed until the sandbox port is fixed.
++    sandbox_unsupported = true;
++#endif
++    if (!disable_sandbox && !sandbox_unsupported) {
+ #if defined(Q_OS_LINUX)
+         parsedCommandLine.AppendSwitch(sandbox::policy::switches::kDisableSetuidSandbox);
+ #endif
+     } else {
+         parsedCommandLine.AppendSwitch(sandbox::policy::switches::kNoSandbox);
+-        qInfo("Sandboxing disabled by user.");
++        if (disable_sandbox)
++            qInfo("Sandboxing disabled by user.");
+     }
+ 
+     // Do not advertise a feature we have removed at compile time
