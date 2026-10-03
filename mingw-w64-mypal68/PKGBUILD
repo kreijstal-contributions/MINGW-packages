@@ -3,8 +3,8 @@
 _realname=mypal68
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=78.0.2
-pkgrel=2
+pkgver=78.1.0
+pkgrel=1
 _rust_overlay="mypal68-rust-overlay-${pkgver}.tar.xz"
 pkgdesc="Mypal 68 web browser for Windows XP and later (mingw-w64)"
 arch=('any')
@@ -42,12 +42,13 @@ _patches=(
   '0003-Avoid-std-char-traits-for-Latin1Char.patch'
   '0004-Do-not-override-libcxx-throw-helpers.patch'
   '0005-Use-vector-for-RLZ-machine-id-bytes.patch'
-  '0006-Move-prepare-source-edits-into-patch.patch'
-  '0007-Include-fstream-before-hunspell-fopen-hook.patch'
-  '0008-Use-unique-ptr-for-crashreporter-log-stream.patch'
-  '0009-Use-byte-traits-for-mozpkix-ByteString.patch'
-  '0010-Fix-mozpack-globstar-match-on-Python-3.7.patch'
-  '0011-Guard-S_IFLNK-and-S_IFSOCK-in-OSFileConstants.patch'
+  '0006-Include-fstream-before-hunspell-fopen-hook.patch'
+  '0007-Use-byte-traits-for-mozpkix-ByteString.patch'
+  '0008-Update-bindgen-to-0.69-in-Cargo.lock.patch'
+  '0009-Update-socket2-and-libc-in-Cargo.lock.patch'
+  '0010-Make-opaque-Servo-FFI-handles-interior-mutable.patch'
+  '0011-Include-errno.h-in-dav1d-win32-thread-header.patch'
+  '0012-Only-make-int-conversions-fatal-in-dom-canvas-for-clang-cl.patch'
 )
 source=(
   "Mypal68-${pkgver}.tar.gz::https://github.com/Feodor2/Mypal68/archive/refs/tags/${pkgver}.tar.gz"
@@ -56,27 +57,36 @@ source=(
   "${_rust_overlay}"
 )
 sha256sums=(
-  '0a2bb9bd6fca767c70afa9d6a584a0b71bb48e4a66f2d3885a598bf425699c4c'
-  'a2cbfbd039edbfd5d3b2044b7adab0814a8987d9d8bd0eb7b10772fbd4273ef9'
-  '5383d2698a824c37e601ee193dbf6a5662dfe0ce552ccd2241efcba0b151bd5d'
-  'ee9bed298adda7478c048ace2a998876352f2e7e8d457cd84ec0527fb2cc1bab'
-  '571de93a9c8443621a6fdff67542027495856409a05d895413d3cf84de5c7f1f'
-  '405278ce21cfad738b41c36459684e17790db887e557374683b9405af56001cf'
-  '8f1ac8cd1a1b78cbfb6cd1995fd1e20623fbcaa6af77e5d88be720c0172c1fd1'
-  '203e700cfa754346d5fcfbde0a3f894e11fcfa4b9cbc0abfe602649f39b44373'
-  'f40d047811613fa43a9b082165fc4cdc654ae5e7790acfe9766fd2ea0ad9bb9b'
-  'd204985c28e0f15b4d94902bf4093c684f3e44d6ecb9c511c7eccb9989decfc4'
-  '242ed150d22c684630949b45d5d5560841954f19146e9559486344b29d94191c'
-  'd98221c72d42f8f54b10351491d14d778ac8e7e25d1c215d3f6fc2f5df8b076e'
-  '28a1b66844e92649af445481461c2059a5bb3e6dff7edb9369407ff9ae90caa7'
-  '2b2b75df8d1c76c99257890670323b1ff12876bf2326197783058c8dd22fa0a7'
+  'd92923b70a7c54c54b8faa61a1525a7bc85daf5e0eec7c85ecfb32532d7bdd8d'
+  '454a9bd6bc1edbc2ef17660d10e9cbc9abb2bbf5476101fee96e3a1abc848d9f'
+  '90634886c1d2b0959881a31675a9b387db1c9b6029f5ea332d8307f56133caab'
+  'b656e23b64788b04d3b47369ab806e165fa579ad563d3f393b86cd63767f0b16'
+  '6db0cf41127abf3ff876c2b5b298fbd824c9d87411cb98a6eab4d52d472c3bd6'
+  'e127cf2ebdf656db527440c7554a2d13306852d32a1a92112bc6a3dadfaba39e'
+  'fb2bfacad74a93277b780cfeca1b93c53c1345a40a9a6370d68f1244349ae8ac'
+  '12969db9fa3836874079e1684c4db72028436e5bbefd6da2dbb8c21ba214f33a'
+  'c5a897b3eb376ea54fad9402a399118db038440a82a83cb590529acd76523f5b'
+  '06d61a6038a2af984e136e9f668cbb6f5f2f2168a67f7b899871ee6e66dd9feb'
+  'f3a3d6be4119be58e6a9c0fd3eaa0332b7f415339cca457b16a7571fd11ab4bc'
+  'c12d73bef7b1accc2f754aaa4316bcc3e179691a3a1fba9a2a063470513e4395'
+  '2fdb8550b44fdb15afa3dce2c17e1107e0952cc981926db9d2100045e27ad261'
+  '28ac4dd1c0aac080a0af0c28c0d3a0c688a9147097f01e3c32d8a2368dedb7f8'
+  '5cf0c74dabf96f0631404f4e9a23fbe45e9d24037b67b6120c34709934c34378'
 )
 
 prepare() {
   cd "${srcdir}/Mypal68-${pkgver}"
 
-  patch --binary -Np1 --forward --ignore-whitespace \
-    -i "${srcdir}/${_patches[0]}"
+  # The mingw64 ffvpx config starts as a copy of the MSVC one; 0001 adjusts
+  # the few toolchain-dependent lines.
+  cp media/ffvpx/config_win64.h media/ffvpx/config_mingw64.h
+  # Let the per-platform configs override the disabled defaults.
+  perl -pi -e 's/^#define (\w+) 0$/#ifndef $1\n#define $1 0\n#endif/' \
+    media/ffvpx/defaults_disabled.h
+
+  for patch in "${_patches[@]}"; do
+    patch --binary -Np1 --forward -i "${srcdir}/${patch}"
+  done
 
   while IFS= read -r path; do
     case "${path}" in
@@ -90,43 +100,32 @@ prepare() {
   done < "${srcdir}/rust-vendor-prune.list"
 
   bsdtar -xf "${srcdir}/${_rust_overlay}" -C .
+  # quote 1.0.42, pulled in by bindgen 0.69, no longer exports __rt.
+  sed -i 's/quote::__rt::TokenStream/TokenStream/' \
+    third_party/rust/failure_derive/src/lib.rs
 
-  for patch in "${_patches[@]:1}"; do
-    patch --binary -Np1 --forward --ignore-whitespace \
-      -i "${srcdir}/${patch}"
-  done
-
-  # Some vendored Rust crates reference binary/test artifacts that are
-  # intentionally not carried in this source package patch.
+  # Mypal edits some vendored crates without refreshing their file hashes.
+  # Recompute them; the package checksums that Cargo.lock pins are kept.
   find third_party/rust -name .cargo-checksum.json -print0 |
-    xargs -0 perl -MJSON::PP -e '
+    xargs -0 perl -MJSON::PP -MDigest::SHA=sha256_hex -e '
       for my $path (@ARGV) {
         local $/;
         open my $in, "<", $path or die "$path: $!";
-        my $text = <$in>;
+        my $json = decode_json(<$in>);
         close $in;
-        next unless length $text;
-        my $dir = $path;
-        $dir =~ s#/\.cargo-checksum\.json$##;
-        my $json = decode_json($text);
+        (my $dir = $path) =~ s#/\.cargo-checksum\.json$##;
         for my $file (keys %{ $json->{files} }) {
-          delete $json->{files}{$file} unless -e "$dir/$file";
+          if (open my $f, "<:raw", "$dir/$file") {
+            $json->{files}{$file} = sha256_hex(<$f>);
+          } else {
+            delete $json->{files}{$file};
+          }
         }
         open my $out, ">", $path or die "$path: $!";
         print {$out} JSON::PP->new->canonical(1)->encode($json), "\n";
         close $out;
       }
     '
-
-  if ! grep -q 'directory = "../@VENDORED_DIRECTORY@"' .cargo/config.in; then
-    echo "Could not rewrite vendored Cargo source path" >&2
-    return 1
-  fi
-
-  if ! grep -q "command' -v python3" mach; then
-    echo "mach was not patched to use python3" >&2
-    return 1
-  fi
 }
 
 build() {
@@ -136,14 +135,21 @@ build() {
   export CXX="${MINGW_PREFIX}/bin/c++"
   export AR="${MINGW_PREFIX}/bin/ar"
   local _windres="${MINGW_PREFIX}/bin/windres"
+  # bindgen needs clang even when GCC builds the C++ code, but configure
+  # refuses --with-clang-path when the target compiler is clang already.
+  local _clang_path="ac_add_options --with-clang-path=${MINGW_PREFIX}/bin/clang++"
   if [[ ${MINGW_PACKAGE_PREFIX} == mingw-w64-clang-* ]]; then
     _windres="${MINGW_PREFIX}/bin/llvm-windres"
+    _clang_path=
   fi
 
   export RC="${_windres}"
   export RANLIB="${MINGW_PREFIX}/bin/ranlib"
   export WINDRES="${_windres}"
   export NODEJS="${MINGW_PREFIX}/bin/node"
+  export RUSTC="${MINGW_PREFIX}/bin/rustc"
+  export CARGO="${MINGW_PREFIX}/bin/cargo"
+  export LLVM_OBJDUMP="${MINGW_PREFIX}/bin/llvm-objdump.exe"
   export PYTHON="/usr/bin/python3"
   export CARGO_NET_GIT_FETCH_WITH_CLI=true
   export PATH="/usr/bin:${MINGW_PREFIX}/bin:${PATH}"
@@ -158,8 +164,21 @@ build() {
 
   cat > "${MOZCONFIG}" <<EOF
 ac_add_options --with-libclang-path=${MINGW_PREFIX}/bin
+${_clang_path}
 ac_add_options --enable-nodejs
 ac_add_options --disable-updater
+ac_add_options --disable-tests
+# 78.0.2 was built without these, and their Windows code (IA2/MSCOM, sctp,
+# sipcc) has never been made to compile with mingw-w64 GCC.
+ac_add_options --disable-accessibility
+ac_add_options --disable-webrtc
+# Mypal has no crash report server, and its tree never builds nsICrashReporter.
+ac_add_options --disable-crashreporter
+# mozjemalloc replaces free() in Mozilla code, but MSYS2 links the shared
+# libstdc++-6.dll whose std::string allocations come from the CRT heap.
+ac_add_options --disable-jemalloc
+# Debug info makes xul.dll about 3.5 GB, which Windows refuses to load.
+ac_add_options --disable-debug-symbols
 EOF
 
   "${PYTHON}" ./mach configure

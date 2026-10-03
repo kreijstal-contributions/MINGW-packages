@@ -1,9 +1,12 @@
+diff --git a/js/src/builtin/intl/Locale.cpp b/js/src/builtin/intl/Locale.cpp
+index b06b519063..b932d26a5b 100644
 --- a/js/src/builtin/intl/Locale.cpp
 +++ b/js/src/builtin/intl/Locale.cpp
-@@ -170,6 +170,16 @@
+@@ -169,6 +169,16 @@ static inline bool IsValidUnicodeExtensionValue(JSContext* cx,
+ }
  
  /** Iterate through (sep keyword) in a valid, lowercased Unicode extension. */
- template <typename CharT>
++template <typename CharT>
 +static const CharT* FindChar(const CharT* begin, size_t length, CharT target) {
 +  for (const CharT* p = begin, *end = begin + length; p < end; p++) {
 +    if (*p == target) {
@@ -13,11 +16,10 @@
 +  return nullptr;
 +}
 +
-+template <typename CharT>
+ template <typename CharT>
  class SepKeywordIterator {
    const CharT* iter_;
-   const CharT* const end_;
-@@ -202,8 +212,7 @@
+@@ -202,8 +212,7 @@ class SepKeywordIterator {
        iter_++;
  
        // Find the next separator.
@@ -27,7 +29,7 @@
        if (!iter_) {
          return nullptr;
        }
-@@ -861,7 +870,7 @@
+@@ -861,7 +870,7 @@ static BaseNamePartsResult BaseNameParts(const CharT* baseName, size_t length) {
    size_t regionLength = 0;
  
    // Search the first separator to find the end of the language subtag.

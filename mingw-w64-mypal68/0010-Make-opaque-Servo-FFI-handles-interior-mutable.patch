@@ -1,0 +1,21 @@
+diff --git a/layout/style/ServoBindings.toml b/layout/style/ServoBindings.toml
+index 77f952dbc5..bfcf24088a 100644
+--- a/layout/style/ServoBindings.toml
++++ b/layout/style/ServoBindings.toml
+@@ -625,4 +625,16 @@ mapped-generic-types = [
+     { generic = false, gecko = "nsString", servo = "nsstring::nsString" },
+ ]
+ 
++# Rust marks a shared reference to a type without interior mutability as
++# noalias and readonly. glue.rs turns &RawServoStyleSet, &ServoCssRules and
++# the other opaque handles into references to Rust data that it then
++# mutates, so once those calls are inlined LLVM is free to drop the stores.
++# That is what made Device::reset_computed_values free the old default
++# ComputedValues without storing the new ones, and every page then crashed
++# in the cascade. A zero-sized UnsafeCell keeps the handles opaque but
++# interior mutable.
++fixups = [
++    { pat = '#\[derive\(Debug, Copy, Clone\)\]\s*pub struct (RawServo\w+|ServoCssRules) \{\s*_unused: \[u8; 0\],\s*\}', rep = '#[derive(Debug)] pub struct ${1} { _unused: [u8; 0], _cell: ::std::cell::UnsafeCell<()> }' },
++]
++
+ whitelist-functions = ["Servo_.*", "Gecko_.*"]

@@ -1,3 +1,5 @@
+diff --git a/extensions/spellcheck/hunspell/glue/hunspell_fopen_hooks.h b/extensions/spellcheck/hunspell/glue/hunspell_fopen_hooks.h
+index 7388b1daa7..994f33be60 100644
 --- a/extensions/spellcheck/hunspell/glue/hunspell_fopen_hooks.h
 +++ b/extensions/spellcheck/hunspell/glue/hunspell_fopen_hooks.h
 @@ -15,6 +15,10 @@

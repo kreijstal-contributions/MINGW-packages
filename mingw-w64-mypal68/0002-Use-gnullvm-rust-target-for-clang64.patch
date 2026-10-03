@@ -1,6 +1,8 @@
+diff --git a/build/moz.configure/rust.configure b/build/moz.configure/rust.configure
+index a02557c1a4..9c0296111f 100644
 --- a/build/moz.configure/rust.configure
 +++ b/build/moz.configure/rust.configure
-@@ -163,6 +163,8 @@
+@@ -163,6 +163,8 @@ def rust_supported_targets(rustc):
                  retry = t[:-len('windows-msvc')] + 'mingw32'
              elif t.endswith('-windows-gnu'):
                  retry = t[:-len('windows-gnu')] + 'mingw32'
@@ -9,7 +11,7 @@
              else:
                  continue
              try:
-@@ -216,7 +218,9 @@
+@@ -217,7 +219,9 @@ def rust_triple_alias(host_or_target, host_or_target_c_compiler):
              # narrow further down using extra information from the build system.
              # - For windows targets, correlate with the C compiler type
              if host_or_target.kernel == 'WINNT':

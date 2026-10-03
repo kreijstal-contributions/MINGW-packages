@@ -1,0 +1,12 @@
+diff --git a/third_party/dav1d/src/thread.h b/third_party/dav1d/src/thread.h
+index 764ad33e3e..e671a2a062 100644
+--- a/third_party/dav1d/src/thread.h
++++ b/third_party/dav1d/src/thread.h
+@@ -38,6 +38,7 @@
+ #if defined(_WIN32)
+ 
+ #include <windows.h>
++#include <errno.h>
+ #include <malloc.h>
+ 
+ #define PTHREAD_ONCE_INIT INIT_ONCE_STATIC_INIT

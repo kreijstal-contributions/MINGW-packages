@@ -1,0 +1,13 @@
+diff --git a/dom/canvas/moz.build b/dom/canvas/moz.build
+index a263210760..364d0d95fb 100644
+--- a/dom/canvas/moz.build
++++ b/dom/canvas/moz.build
+@@ -214,5 +214,7 @@ LOCAL_INCLUDES += CONFIG['SKIA_INCLUDES']
+ if CONFIG['CC_TYPE'] in ('clang', 'gcc'):
+     CXXFLAGS += ['-Wno-error=shadow']
+ 
+-if CONFIG['CC_TYPE'] in ('clang', 'clang-cl'):
++# The 78.1.0 headers narrow size_t to uint32_t in several places, which only
++# clang on mingw sees, since Mypal itself is built with MSVC.
++if CONFIG['CC_TYPE'] == 'clang-cl':
+     CXXFLAGS += ['-Werror=implicit-int-conversion']
